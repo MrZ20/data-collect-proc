@@ -48,14 +48,14 @@ def test_atomic_daily_files_and_retry_after_ack_loss(tmp_path, monkeypatch):
             publish(writer, "org/data", "ci", state)
         assert len(state.pending()) == 2
         assert len(writer.commits) == 1
-        assert set(writer.commits[0]) == {"data/2026-01-02.jsonl", "reports/2026-01-02.md"}
+        assert set(writer.commits[0]) == {"data/vllm-ascend-ci/2026-01-02.jsonl", "reports/vllm-ascend-ci/2026-01-02.md"}
         monkeypatch.setattr(state, "acknowledge", real_acknowledge)
         assert publish(writer, "org/data", "ci", state) == 2
         assert state.pending() == []
         assert len(writer.commits) == 1
-        records = [json.loads(line) for line in writer.files["data/2026-01-02.jsonl"].splitlines()]
+        records = [json.loads(line) for line in writer.files["data/vllm-ascend-ci/2026-01-02.jsonl"].splitlines()]
         assert {item["url"] for item in records} == {record(1)["url"], record(2)["url"]}
-        assert writer.files["reports/2026-01-02.md"].count("[Actions]") == 2
+        assert writer.files["reports/vllm-ascend-ci/2026-01-02.md"].count("[Actions]") == 2
 
 
 def test_multiple_days_written_in_one_commit(tmp_path):
@@ -66,8 +66,8 @@ def test_multiple_days_written_in_one_commit(tmp_path):
         assert publish(writer, "org/data", "ci", state) == 2
         assert len(writer.commits) == 1
         assert set(writer.commits[0]) == {
-            "data/2026-01-02.jsonl", "reports/2026-01-02.md",
-            "data/2026-01-03.jsonl", "reports/2026-01-03.md",
+            "data/vllm-ascend-ci/2026-01-02.jsonl", "reports/vllm-ascend-ci/2026-01-02.md",
+            "data/vllm-ascend-ci/2026-01-03.jsonl", "reports/vllm-ascend-ci/2026-01-03.md",
         }
 
 

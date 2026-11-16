@@ -21,7 +21,7 @@ from .github import GitHub, GitHubError
 LOG = logging.getLogger(__name__)
 DATA_REPOSITORY = 'MrZ20/data_repo'
 CONFIG_PATH = 'configs/vllm-ascend-changes/paths.yaml'
-DATA_BRANCH = 'data/vllm-ascend-changes'
+DATA_BRANCH = 'main'
 STATE_DIR = Path(os.environ.get('ASCEND_CHANGES_STATE_DIR', '/state'))
 
 
@@ -136,7 +136,7 @@ def publish(client, db):
         parent = client.branch_head(DATA_REPOSITORY, DATA_BRANCH)
         files = {}
         for day, records in days.items():
-            path = f'data/{day}.jsonl'
+            path = f'data/vllm-ascend-changes/{day}.jsonl'
             try:
                 old = client.read_text(DATA_REPOSITORY, path, parent)
             except GitHubError as exc:

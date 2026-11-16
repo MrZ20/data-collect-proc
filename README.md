@@ -75,11 +75,11 @@ token 文件只包含一行 token，不放进仓库。可以用 `--token-file /p
 
 旧版状态没有保存首次起点，不能从移动后的游标准确还原；通用升级会保守使用旧游标作为下界并记录警告。此次服务器升级根据首次真实采集日志恢复了准确下界 `2026-11-16T07:28:40Z`。
 
-程序只读取状态，不下载日志或 PR diff。候选按日写入私仓 `data/vllm-ascend-ci` 分支：
+程序只读取状态，不下载日志或 PR diff。候选按日写入私仓 `main` 分支：
 
 ````text
-data/YYYY-MM-DD.jsonl
-reports/YYYY-MM-DD.md
+data/vllm-ascend-ci/YYYY-MM-DD.jsonl
+reports/vllm-ascend-ci/YYYY-MM-DD.md
 ````
 
 每条 JSONL 只有 `time`（UTC）、`workflow`、`job`、`failed_steps`、`runner`、`base_repo`、`url`；连续失败重新纳入时加 `consecutive_failures`。`failed_steps` 保留该 job 的全部失败步骤，便于 agent 理解上下文。agent 沿 job 链接自行读取日志等信息。
@@ -96,7 +96,7 @@ HTTP 连接复用。读取请求对连接错误、超时、临时 5xx 和限流�
 
 ````bash
 docker build -f tasks/vllm-ascend-ci/Dockerfile \
-  -t data-collect-vllm-ascend-ci:0.1.1 .
+  -t data-collect-vllm-ascend-ci:0.1.2 .
 ````
 
 服务器约定目录：
@@ -154,5 +154,5 @@ journalctl -u ascend-ci-collector.service
 - 首次部署曾在 Python 3.12 基础容器内手动创建虚拟环境、安装包、运行测试与真实采集，再将成功流程写入 Dockerfile；此次按 Dockerfile 重新构建验证。
 - 最终镜像真实采集扫描 2181 个 run，仅查询 28 个 run 的 job：共 59 次 API 请求，其中 12 次元数据请求返回 304；处理 130 个新 job，新增并上传 5 条候选，上传队列归零，固定起点保持 `2026-11-16T07:28:40Z`。
 - 服务器旧 SQLite 已备份为 `state-before-0.1.1.sqlite3`，恢复固定首次边界并将 `recheck_days` 改为 2。
-- 镜像为 `data-collect-vllm-ascend-ci:0.1.1`，架构 `arm64`，运行身份 `10001:10001`；镜像 ID 为 `sha256:f863f1f33e5ef96480b663300fbb69856b3efbce4a5431058a828faa279c3dfd`。
+- 上述历史验证使用镜像 `data-collect-vllm-ascend-ci:0.1.1`；迁移到 main 后部署版本为 `0.1.2`，继续使用 `arm64` 和 `10001:10001`。
 - 服务器代码、配置、状态和运行时 token 已放置到上述目录；`ascend-ci-collector.timer` 已启用每小时采集上传。token 不在 Git 或镜像中。

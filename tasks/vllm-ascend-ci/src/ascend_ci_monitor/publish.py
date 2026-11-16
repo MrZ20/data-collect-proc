@@ -32,7 +32,7 @@ def publish(client, repository: str, branch: str, state) -> int:
         parent = client.branch_head(repository, branch)
         files = {}
         for day, additions in days.items():
-            path = f'data/{day}.jsonl'
+            path = f'data/vllm-ascend-ci/{day}.jsonl'
             try:
                 old = client.read_text(repository, path, parent)
             except GitHubError as exc:
@@ -48,7 +48,7 @@ def publish(client, repository: str, branch: str, state) -> int:
                 continue
             ordered = sorted(records.values(), key=lambda record: (record['time'], record['url']))
             files[path] = ''.join(json.dumps(record, ensure_ascii=False) + '\n' for record in ordered)
-            files[f'reports/{day}.md'] = render_report(ordered)
+            files[f'reports/vllm-ascend-ci/{day}.md'] = render_report(ordered)
         if not files:
             break
         try:

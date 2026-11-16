@@ -69,13 +69,19 @@ def test_publish_deduplicates_after_lost_response(monkeypatch):
         def __init__(self):
             self.data = ''
             self.writes = 0
-        def ensure_branch(self, *args): pass
-        def branch_head(self, *args): return 'head'
+        def ensure_branch(self, repo, branch):
+            assert (repo, branch) == ('MrZ20/data_repo', 'main')
+        def branch_head(self, repo, branch):
+            assert (repo, branch) == ('MrZ20/data_repo', 'main')
+            return 'head'
         def read_text(self, *args):
+            assert args[1] == 'data/vllm-ascend-changes/2026-01-01.jsonl'
             if not self.data:
                 raise GitHubError(404, 'missing')
             return self.data
         def commit_files(self, repo, branch, parent, files, message):
+            assert branch == 'main'
+            assert set(files) == {'data/vllm-ascend-changes/2026-01-01.jsonl'}
             self.data = next(iter(files.values()))
             self.writes += 1
             raise RuntimeError('response lost')

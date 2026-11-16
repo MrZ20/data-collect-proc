@@ -20,7 +20,7 @@ DEFAULTS = {
     'data_repository': 'MrZ20/data_repo',
     'config_branch': 'main',
     'policy_path': 'configs/vllm-ascend-ci/workflows.yaml',
-    'data_branch': 'data/vllm-ascend-ci',
+    'data_branch': 'main',
     'state_dir': './state/vllm-ascend-ci',
     'initial_hours': 1,
     'recheck_days': 2,
