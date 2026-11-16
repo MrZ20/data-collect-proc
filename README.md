@@ -2,11 +2,11 @@
 
 每个任务单独维护依赖、Dockerfile、部署配置和本地状态。当前只有 `tasks/vllm-ascend-ci`，用于把 GitHub Actions 运行时的失败 job 初筛后交给 agent 分析。
 
-镜像手动构建。本仓库没有 GitHub Actions 工作流。部署文件中的 systemd timer 需要手动安装、启用。
+镜像手动构建。本仓库没有 GitHub Actions 工作流。`zsl-arm64` 已启用 systemd timer，每小时启动一次容器，采集并上传数据。
 
 ## 仓库分工
 
-- 本仓库：采集程序、测试、镜像和部署文件；目前是本地 Git 仓库。
+- [MrZ20/data-collect-proc](https://github.com/MrZ20/data-collect-proc)：公开的采集程序、测试、镜像和部署文件。
 - [MrZ20/data_repo](https://github.com/MrZ20/data_repo)：私有规则和采集结果。
 - [MrZ20/ascend-ci-monitor](https://github.com/MrZ20/ascend-ci-monitor)：后续 agent 公开发布分析；采集器不向它写入。
 
@@ -69,8 +69,6 @@ token 文件只包含一行 token，不放进仓库。可以用 `--token-file /p
 
 部署参数使用 `--config /path/to/config.yaml`，示例见任务的 `deploy/config.example.yaml`。本地不传配置时，SQLite 和配置缓存默认保存在 `./state/vllm-ascend-ci/`。容器配置使用 `/state`。
 
-
-
 ## 采集与输出
 
 首次默认扫描最近一小时，加十分钟重叠窗口，将实际起点持久化为 `collection_started_at`。以后按游标补采，并重叠十分钟；每轮同时回查最近两天创建的 run，及时发现 attempt 增加的重跑。所有批量扫描都不会早于首次起点。两天是原始 run 的创建时间范围，不是重跑开始时间；更早且已完成的 run 不追查重跑。已登记但未完成的 run 持续跟踪到结束，即使已超出两天。停机超过两天时仍补齐停机期间的新 run。配置更新作用于之后处理的执行，不自动重新分析已处理 job。
@@ -128,13 +126,13 @@ cd /opt/data-collect-proc/source
 tasks/vllm-ascend-ci/deploy/run.sh
 ````
 
-`run.sh` 只依赖 Docker Engine，无需 Compose；服务器 `zsl-arm64` 使用此入口。安装了 Compose 的机器也可使用提供的 `deploy/compose.yaml`。`run.sh publish` 只重试上传，`run.sh collect --no-upload` 只采集。
+`run.sh` 只依赖 Docker Engine，无需 Compose；服务器 `zsl-arm64` 使用此入口。密钥已配置在服务器 `secrets/github_token`，每次启动时只读挂载到容器的 `/run/secrets/github_token`，采集器通过 `GITHUB_TOKEN_FILE` 自动读取。安装了 Compose 的机器也可使用提供的 `deploy/compose.yaml`。`run.sh publish` 只重试上传，`run.sh collect --no-upload` 只采集。
 
 需要替换服务器根目录或镜像时设置 `DEPLOY_DIR`、`IMAGE`。复制代码时不要复制 `.venv`、本地状态或 token；密钥单独传输并只读挂载。无需 NPU、特权容器或开放入站端口。
 
 源仓库为公开仓库，读取 token 无需源仓库写权限。私仓 token 限定 `MrZ20/data_repo`，需要 `Contents: read/write`。这仍是仓库级权限，不是目录级权限。采集器不需要公开分析仓库的 token。
 
-后续决定开启定时采集时，手动安装 timer；本次验证没有启用它：
+服务器已安装并启用以下 service/timer，重启后会自动恢复。部署到其他服务器时执行：
 
 ````bash
 sudo install -m 644 tasks/vllm-ascend-ci/deploy/collector.service \
@@ -143,10 +141,12 @@ sudo install -m 644 tasks/vllm-ascend-ci/deploy/collector.timer \
   /etc/systemd/system/ascend-ci-collector.timer
 sudo systemctl daemon-reload
 sudo systemctl enable --now ascend-ci-collector.timer
+sudo systemctl start ascend-ci-collector.service
+systemctl list-timers ascend-ci-collector.timer
 journalctl -u ascend-ci-collector.service
 ````
 
-定时器在每小时第七分钟附近运行。每个新增任务使用自己的镜像、服务、配置和状态目录；暂不引入共享任务框架。
+定时器在每小时第七分钟附近运行（附加最多 60 秒随机延迟），完成后退出容器，SQLite 和上传队列保存在持久化目录。采集或上传失败由现有网络重试机制处理，未上传数据保留到下轮。每个新增任务使用自己的镜像、服务、配置和状态目录；暂不引入共享任务框架。
 
 ## 已完成的验证（2026-11-16）
 
@@ -155,4 +155,4 @@ journalctl -u ascend-ci-collector.service
 - 最终镜像真实采集扫描 2181 个 run，仅查询 28 个 run 的 job：共 59 次 API 请求，其中 12 次元数据请求返回 304；处理 130 个新 job，新增并上传 5 条候选，上传队列归零，固定起点保持 `2026-11-16T07:28:40Z`。
 - 服务器旧 SQLite 已备份为 `state-before-0.1.1.sqlite3`，恢复固定首次边界并将 `recheck_days` 改为 2。
 - 镜像为 `data-collect-vllm-ascend-ci:0.1.1`，架构 `arm64`，运行身份 `10001:10001`；镜像 ID 为 `sha256:f863f1f33e5ef96480b663300fbb69856b3efbce4a5431058a828faa279c3dfd`。
-- 服务器代码、配置、状态和运行时 token 已放置到上述目录；没有安装或启用定时器。token 不在 Git 或镜像中。
+- 服务器代码、配置、状态和运行时 token 已放置到上述目录；`ascend-ci-collector.timer` 已启用每小时采集上传。token 不在 Git 或镜像中。
