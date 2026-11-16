@@ -2,6 +2,7 @@
 
 import base64
 from email.utils import parsedate_to_datetime
+import json
 import random
 import time
 from urllib.parse import quote
@@ -19,10 +20,14 @@ class GitHub:
     def __init__(self, token: str):
         self.token = token.strip()
         self.requests = 0
+        self.cache_hits = 0
         self.remaining = None
         self.session = requests.Session()
 
     def request(self, method: str, path: str, data=None, params=None):
+        return self._request(method, path, data=data, params=params)
+
+    def _request(self, method: str, path: str, data=None, params=None, cache_entry=None):
         url = 'https://api.github.com' + path
         headers = {
             'Accept': 'application/vnd.github+json',
@@ -31,6 +36,8 @@ class GitHub:
         }
         if self.token:
             headers['Authorization'] = 'Bearer ' + self.token
+        if cache_entry is not None and cache_entry[3] is not None:
+            headers['If-None-Match'] = cache_entry[3][0]
         method = method.upper()
         for attempt in range(3):
             self.requests += 1
@@ -45,8 +52,19 @@ class GitHub:
                 raise RuntimeError('GitHub network request failed; retry later') from None
 
             self.remaining = response.headers.get('X-RateLimit-Remaining')
+            if response.status_code == 304 and cache_entry is not None and cache_entry[3] is not None:
+                self.cache_hits += 1
+                return cache_entry[3][1]
             if 200 <= response.status_code < 300:
-                return response.json() if response.content else None
+                payload = response.json() if response.content else None
+                if response.status_code == 200 and cache_entry is not None:
+                    cache, key, window_end, _ = cache_entry
+                    etag = response.headers.get('ETag')
+                    if etag:
+                        cache.put_http_cache(key, etag, payload, window_end)
+                    else:
+                        cache.delete_http_cache(key)
+                return payload
             try:
                 message = response.json().get('message', 'Request failed')
             except (ValueError, AttributeError):
@@ -88,6 +106,11 @@ class GitHub:
 
     def get(self, path: str, params=None):
         return self.request('GET', path, params=params)
+
+    def get_cached(self, path: str, params, cache, window_end: str):
+        key = json.dumps([path, params or {}], sort_keys=True, separators=(',', ':'), ensure_ascii=False)
+        entry = cache.get_http_cache(key)
+        return self._request('GET', path, params=params, cache_entry=(cache, key, window_end, entry))
 
     def paginate(self, path: str, key: str, params=None):
         params = dict(params or {}, per_page=100)

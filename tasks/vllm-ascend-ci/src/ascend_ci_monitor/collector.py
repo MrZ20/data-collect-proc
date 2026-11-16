@@ -38,20 +38,46 @@ def sync_policy(client, config: dict, state_dir: Path, local_path=None) -> Polic
         return Policy.load(cache)
 
 
-def runs_between(client, repository: str, start: datetime, end: datetime) -> dict[int, dict]:
-    """Split busy ranges to avoid GitHub's 1,000-result search ceiling."""
+def _runs_window(client, repository: str, start: datetime, end: datetime, state=None) -> dict[int, dict]:
+    """Read one stable interval, retrying when pagination drops/duplicates rows."""
     path = f'/repos/{repository}/actions/runs'
-    params = {'created': f'{utc(start)}..{utc(end)}', 'per_page': 100}
-    first = client.get(path, params)
-    if first['total_count'] >= 1000:
-        if (end - start).total_seconds() <= 1:
-            raise RuntimeError('Too many workflow runs in one second; collection window is incomplete')
-        middle = start + timedelta(seconds=int((end - start).total_seconds() // 2))
-        return runs_between(client, repository, start, middle) | runs_between(client, repository, middle, end)
-    records = {run['id']: run for run in first['workflow_runs']}
-    for page in range(2, (first['total_count'] + 99) // 100 + 1):
-        data = client.get(path, dict(params, page=page))
-        records.update((run['id'], run) for run in data['workflow_runs'])
+    params = {'created': f'{utc(start)}..{utc(end)}', 'per_page': 100, 'exclude_pull_requests': 'true'}
+
+    def page(number):
+        query = dict(params, page=number)
+        if state is not None:
+            return client.get_cached(path, query, state, utc(end))
+        return client.get(path, query)
+
+    for attempt in range(2):
+        first = page(1)
+        total = first['total_count']
+        if total >= 1000:
+            if start == end:
+                raise RuntimeError('Too many workflow runs in one second; collection window is incomplete')
+            middle = start + timedelta(seconds=int((end - start).total_seconds() // 2))
+            return (_runs_window(client, repository, start, middle, state)
+                    | _runs_window(client, repository, middle + timedelta(seconds=1), end, state))
+        records = {run['id']: run for run in first['workflow_runs']}
+        consistent = True
+        for number in range(2, (total + 99) // 100 + 1):
+            data = page(number)
+            consistent &= data['total_count'] == total
+            records.update((run['id'], run) for run in data['workflow_runs'])
+        if consistent and len(records) == total:
+            return records
+        LOG.warning('Run pagination changed in %s..%s; retrying interval', utc(start), utc(end))
+    raise RuntimeError('Run pagination remained inconsistent; cursor was not advanced')
+
+
+def runs_between(client, repository: str, start: datetime, end: datetime, state=None) -> dict[int, dict]:
+    """Hour-aligned intervals keep older metadata pages eligible for ETag reuse."""
+    records = {}
+    while start <= end:
+        hour_end = start.replace(minute=0, second=0) + timedelta(hours=1, seconds=-1)
+        boundary = min(hour_end, end)
+        records.update(_runs_window(client, repository, start, boundary, state))
+        start = boundary + timedelta(seconds=1)
     return records
 
 
@@ -61,27 +87,45 @@ def collect(source, writer, config: dict, policy: Policy, state, *, now=None, up
     if policy.repository != repository:
         raise ValueError('Policy repository does not match source_repository')
     previous = state.get_meta('scanned_until')
-    start = parse_time(previous) if previous else now - timedelta(hours=config.get('initial_hours', 1))
-    start -= timedelta(minutes=10)
-    last_sweep = state.get_meta('last_sweep')
-    sweep = previous and (not last_sweep or now - parse_time(last_sweep) >= timedelta(hours=24))
-    if sweep:
-        start = min(start, now - timedelta(days=config.get('recheck_days', 7)))
-    runs = runs_between(source, repository, start, now)
-    for run_id in state.pending_run_ids():
+    initial = state.get_meta('collection_started_at')
+    if initial is None:
+        # An old database cannot reveal its original starting point reliably.
+        # Anchor at its saved cursor rather than silently importing older data.
+        initial = previous or utc(now - timedelta(hours=config.get('initial_hours', 1), minutes=10))
+        state.set_meta('collection_started_at', initial)
+        if previous:
+            LOG.warning('Legacy state has no initial boundary; using saved cursor %s', initial)
+    collection_start = parse_time(initial)
+    incremental_start = parse_time(previous) - timedelta(minutes=10) if previous else collection_start
+    rerun_start = max(collection_start, now - timedelta(days=config.get('recheck_days', 2)))
+    start = max(collection_start, min(incremental_start, rerun_start))
+    runs = runs_between(source, repository, start, now, state)
+    pending_ids = set(state.pending_run_ids())
+    for run_id in pending_ids:
         if run_id not in runs:
             runs[run_id] = source.get(f'/repos/{repository}/actions/runs/{run_id}')
 
     jobs = []
     processed_runs = []
+    out_of_scope = []
     queried = 0
     LOG.info('Scanning %s runs from %s to %s', len(runs), utc(start), utc(now))
     for index, run in enumerate(sorted(runs.values(), key=lambda run: run['created_at']), 1):
+        workflow_name = policy.workflow_name(run)
+        if workflow_name is None:
+            if run['id'] in pending_ids:
+                out_of_scope.append(run['id'])
+            continue
+        run = dict(run, name=workflow_name)
         attempt = run['run_attempt']
         known = state.known_attempt(run['id'])
         if known == attempt:
             continue
-        processed_runs.append(run)
+        if known is not None and parse_time(run['created_at']) < rerun_start:
+            # A long downtime may extend new-run catch-up beyond the rerun window.
+            continue
+        tracked_run = dict(run)
+        processed_runs.append(tracked_run)
         # Analyse the batched run metadata before paying for job requests.
         if attempt == 1 and (
             run['status'] in ('queued', 'waiting', 'pending', 'requested')
@@ -95,6 +139,10 @@ def collect(source, writer, config: dict, policy: Policy, state, *, now=None, up
         for job in source.paginate(path, 'jobs', {'filter': 'all'}):
             if job['status'] == 'completed' and not state.has_job(job['id']):
                 jobs.append((run, job))
+            elif job['status'] != 'completed':
+                # The run and job endpoints may become consistent at different
+                # times. Keep polling until the listed jobs have also finished.
+                tracked_run['status'] = 'in_progress'
         queried += 1
         if index % 50 == 0:
             LOG.info('Fetched jobs for %s/%s runs', index, len(runs))
@@ -102,6 +150,8 @@ def collect(source, writer, config: dict, policy: Policy, state, *, now=None, up
     added = 0
     missing_steps = 0
     with state.atomic():
+        for run_id in out_of_scope:
+            state.forget_run(run_id)
         for run, job in sorted(jobs, key=lambda pair: pair[1].get('completed_at') or pair[0]['updated_at']):
             if state.has_job(job['id']):
                 continue
@@ -129,8 +179,8 @@ def collect(source, writer, config: dict, policy: Policy, state, *, now=None, up
         for run in processed_runs:
             state.track_run(run)
         state.set_meta('scanned_until', utc(now))
-        if sweep or not previous:
-            state.set_meta('last_sweep', utc(now))
+    state.prune_http_cache(utc(rerun_start))
     published = publish(writer, config['data_repository'], config['data_branch'], state) if upload else 0
-    return {'runs_scanned': len(runs), 'runs_queried': queried, 'jobs_processed': len(jobs), 'candidates_added': added,
+    return {'scan_start': utc(start), 'rerun_start': utc(rerun_start),
+            'runs_scanned': len(runs), 'runs_queried': queried, 'jobs_processed': len(jobs), 'candidates_added': added,
             'published': published, 'pending_upload': len(state.pending()), 'missing_steps': missing_steps}

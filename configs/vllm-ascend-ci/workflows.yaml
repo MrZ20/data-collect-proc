@@ -1,50 +1,8 @@
 repository: vllm-project/vllm-ascend
 repeat_threshold: 10
 workflows:
-- name: Build csrc Cache
-  exclude_jobs: []
-  jobs: []
-- name: Collect published image information
-  exclude_jobs: []
-  jobs: []
-- name: e2e nightly test multi_node
-  exclude_jobs: []
-  jobs: []
-- name: e2e nightly test
-  exclude_jobs: []
-  jobs: []
-- name: e2e nightly test 560t
-  exclude_jobs: []
-  jobs: []
-- name: e2e nightly models test
-  exclude_jobs: []
-  jobs: []
-- name: Parse nightly profiling traces
-  exclude_jobs: []
-  jobs: []
-- name: Ensure csrc Cache
-  exclude_jobs: []
-  jobs: []
-- name: Nightly image build
-  exclude_jobs: []
-  jobs:
-  - name: build-and-sync (*
-    steps: []
-    exclude: []
-    exclude_chains: []
-- name: Image_oncall
-  exclude_jobs: []
-  jobs: []
-- name: Nightly image build with base
-  exclude_jobs: []
-  jobs: []
-- name: Selected Tests
-  exclude_jobs: []
-  jobs: []
-- name: Selected Tests Upstream
-  exclude_jobs: []
-  jobs: []
 - name: CI Gate Comment
+  file: .github/workflows/bot_ci_gate_comment.yaml
   exclude_jobs: []
   jobs:
   - name: comment
@@ -57,6 +15,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Issue Create/Update Labeler
+  file: .github/workflows/bot_issue_manage.yaml
   exclude_jobs: []
   jobs:
   - name: triage
@@ -67,6 +26,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Merge Conflict Labeler
+  file: .github/workflows/bot_merge_conflict.yaml
   exclude_jobs: []
   jobs:
   - name: main
@@ -77,6 +37,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: PR Create
+  file: .github/workflows/bot_pr_create.yaml
   exclude_jobs: []
   jobs:
   - name: PR create action
@@ -94,6 +55,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Handle /wait-feedback Command
+  file: .github/workflows/issue_wait_feedback_command.yml
   exclude_jobs: []
   jobs:
   - name: Add wait-feedback label
@@ -107,6 +69,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: model downloader
+  file: .github/workflows/labeled_download_model_dataset.yaml
   exclude_jobs: []
   jobs:
   - name: Download models from ModelScope
@@ -114,6 +77,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Nightly Image Build Schedule
+  file: .github/workflows/nightly_image_build.yaml
   exclude_jobs: []
   jobs:
   - name: build-310p
@@ -133,6 +97,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Handle /cancel Command
+  file: .github/workflows/pr_cancel_command.yml
   exclude_jobs: []
   jobs:
   - name: Force-cancel CI runs
@@ -150,6 +115,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Handle /cherry-pick Command
+  file: .github/workflows/pr_cherry_pick_command.yml
   exclude_jobs: []
   jobs:
   - name: Cherry-pick PR to target branch
@@ -175,6 +141,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Cancel runs on PR close
+  file: .github/workflows/pr_close_job.yaml
   exclude_jobs: []
   jobs:
   - name: cancel
@@ -185,6 +152,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Handle /e2e Command
+  file: .github/workflows/pr_e2e_command.yml
   exclude_jobs: []
   jobs:
   - name: Run /e2e tests
@@ -227,6 +195,7 @@ workflows:
     - Post Checkout source
     - Stop containers
     - Complete job
+    - Rebase on releases/v0.30.0 snapshot
     exclude: []
     exclude_chains: []
   - name: e2e-comment (*
@@ -260,12 +229,30 @@ workflows:
     - Post Checkout vllm-project/vllm repo
     - Stop containers
     - Complete job
+    - Install Mooncake wheel
+    - Rebase on releases/v0.30.0 snapshot
+    - Verify required AscendC custom ops are registered (310p)
     exclude:
     - Run selected tests with device
     - Run selected tests without device
     exclude_chains: []
   - name: ensure-csrc-cache / Build csrc cache (*
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout source
+    - Config mirrors (ubuntu)
+    - Config mirrors (openeuler)
+    - Rebase on main snapshot
+    - Update submodules
+    - Install system dependencies (ubuntu)
+    - Install system dependencies (openeuler)
+    - Install vllm-ascend
+    - Verify csrc artifacts
+    - Save csrc cache
+    - Post Checkout source
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: Report result
@@ -275,11 +262,8 @@ workflows:
     - Complete job
     exclude: []
     exclude_chains: []
-  - name: ensure-csrc-cache
-    steps: []
-    exclude: []
-    exclude_chains: []
 - name: Handle /nightly Command
+  file: .github/workflows/pr_nightly_command.yml
   exclude_jobs: []
   jobs:
   - name: Check user authorization
@@ -309,7 +293,13 @@ workflows:
     exclude: []
     exclude_chains: []
   - name: Trigger Nightly-310P
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Dispatch nightly-310p workflow
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: Trigger Weekly-A3-560T
@@ -317,11 +307,23 @@ workflows:
     exclude: []
     exclude_chains: []
   - name: Trigger Nightly-A3-560T
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Dispatch nightly-a3-560t workflow
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: Trigger Nightly-A5
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Dispatch nightly-a5 workflow
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: Build presmoke images
@@ -329,7 +331,13 @@ workflows:
     exclude: []
     exclude_chains: []
   - name: Trigger Nightly-A2
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Dispatch nightly-a2 workflow
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: Trigger Weekly-A2
@@ -341,14 +349,27 @@ workflows:
     exclude: []
     exclude_chains: []
   - name: Trigger Weekly-A3
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Dispatch weekly-a3 workflow
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: Trigger Nightly-A3
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Dispatch nightly-a3 workflow
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
 - name: Handle /rerun Command
+  file: .github/workflows/pr_rerun_command.yml
   exclude_jobs: []
   jobs:
   - name: Re-run failed CI jobs
@@ -366,6 +387,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Handle /revert Command
+  file: .github/workflows/pr_revert_command.yml
   exclude_jobs: []
   jobs:
   - name: Revert merged PR
@@ -392,6 +414,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Handle /run Command
+  file: .github/workflows/pr_run_command.yml
   exclude_jobs: []
   jobs:
   - name: Trigger E2E on the latest commit
@@ -421,6 +444,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Supplement New Tests
+  file: .github/workflows/pr_supplement_new_tests.yaml
   exclude_jobs: []
   jobs:
   - name: Supplement New Tests
@@ -438,6 +462,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: E2E
+  file: .github/workflows/pr_test.yaml
   exclude_jobs:
   - ci-gate
   jobs:
@@ -506,6 +531,9 @@ workflows:
     - Check layout and stage actions
     - Install Mooncake runtime dependencies
     - Build MemFabric AccOffload for sparse KV lifecycle test
+    - Dispatch Daily Issue update
+    - Rebase on releases/v0.32.0rc snapshot
+    - Rebase on releases/v0.31.0rc snapshot
     exclude:
     - Run selected tests with device
     - Run selected tests without device
@@ -548,6 +576,7 @@ workflows:
     - Post Checkout vllm-project/vllm-ascend repo
     - Stop containers
     - Complete job
+    - Set no-tests output for A5 when source paths unchanged
     exclude: []
     exclude_chains: []
   - name: run-selected-tests-a5 (*
@@ -555,15 +584,62 @@ workflows:
     exclude: []
     exclude_chains: []
   - name: run-selected-tests-upstream (*
-    steps: []
-    exclude: []
-    exclude_chains: []
-  - name: prepare-csrc-cache
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Check npu and CANN info
+    - Install packages
+    - Install system dependencies
+    - Rebase on main snapshot
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for A2 upstream tests
+    - Run vllm-project/vllm test
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    - Rebase on releases/v0.32.0rc snapshot
+    - Post Checkout vllm-project/vllm repo
     exclude: []
     exclude_chains: []
   - name: run-selected-tests (*
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check NPU availability
+    - Install packages
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Checkout vllm-project/vllm-ascend repo
+    - Rebase on main snapshot
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Check layout and stage actions
+    - Restore incremental cache
+    - Install Mooncake runtime dependencies
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for selected tests
+    - Build MemFabric AccOffload for sparse KV lifecycle test
+    - Verify required AscendC custom ops are registered
+    - Install vllm-project/vllm-ascend no device
+    - Uninstall Triton for 310P tests
+    - Run selected tests with device
+    - Run selected tests without device
+    - Upload timing data
+    - Upload coverage data
+    - Upload selected test logs
+    - Post Checkout vllm-project/vllm repo
+    - Stop containers
+    - Complete job
+    - Rebase on releases/v0.32.0rc snapshot
+    - Install Mooncake wheel
+    - Post Checkout vllm-project/vllm-ascend repo
     exclude: []
     exclude_chains: []
   - name: codeowner-approval
@@ -598,6 +674,7 @@ workflows:
     - Post Checkout source
     - Stop containers
     - Complete job
+    - Rebase on releases/v0.32.0rc snapshot
     exclude: []
     exclude_chains: []
   - name: prepare-csrc-cache / Build csrc cache (*
@@ -607,12 +684,47 @@ workflows:
   - name: run-selected-tests*
     steps:
     - Run vllm-project/vllm test
+    - Set up job
+    - Initialize containers
+    - Check NPU availability
+    - Install packages
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Checkout vllm-project/vllm-ascend repo
+    - Rebase on main snapshot
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Check layout and stage actions
+    - Restore incremental cache
+    - Install Mooncake runtime dependencies
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for selected tests
+    - Build MemFabric AccOffload for sparse KV lifecycle test
+    - Verify required AscendC custom ops are registered
+    - Install vllm-project/vllm-ascend no device
+    - Uninstall Triton for 310P tests
+    - Run selected tests with device
+    - Run selected tests without device
+    - Upload timing data
+    - Upload coverage data
+    - Upload selected test logs
+    - Post Checkout vllm-project/vllm repo
+    - Stop containers
+    - Complete job
+    - Check npu and CANN info
+    - Install system dependencies
+    - Install FLA NPU for A2 upstream tests
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Rebase on releases/v0.32.0rc snapshot
+    - Install Mooncake wheel
     exclude:
     - Run selected tests with device
     - Run selected tests without device
     - Run vllm-project/vllm test
     exclude_chains: []
 - name: Cache csrc Build Artifacts
+  file: .github/workflows/push_build_csrc_cache.yaml
   exclude_jobs: []
   jobs:
   - name: prepare-targets
@@ -650,6 +762,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Cache pre-commit
+  file: .github/workflows/push_build_precommit_cache.yaml
   exclude_jobs: []
   jobs:
   - name: build-cache
@@ -669,6 +782,7 @@ workflows:
     - Run pre-commit (populate cache)
     exclude_chains: []
 - name: Recipes Preview Comment
+  file: .github/workflows/recipes-preview-comment.yml
   exclude_jobs: []
   jobs:
   - name: select-prs
@@ -685,11 +799,8 @@ workflows:
     - Complete job
     exclude: []
     exclude_chains: []
-  - name: comment
-    steps: []
-    exclude: []
-    exclude_chains: []
 - name: Recipes Preview
+  file: .github/workflows/recipes-preview.yml
   exclude_jobs: []
   jobs:
   - name: dispatch
@@ -705,6 +816,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Recipes
+  file: .github/workflows/recipes.yml
   exclude_jobs: []
   jobs:
   - name: Recipes / Validate
@@ -724,6 +836,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Schedule Daily Tests
+  file: .github/workflows/schedule_daily_test.yaml
   exclude_jobs: []
   jobs:
   - name: daily-select-tests
@@ -814,6 +927,8 @@ workflows:
     - Post Checkout source
     - Stop containers
     - Complete job
+    - Config mirrors (ubuntu)
+    - Config mirrors (openeuler)
     exclude: []
     exclude_chains: []
   - name: run-all-tests (*
@@ -847,6 +962,7 @@ workflows:
     - Stop containers
     - Complete job
     - Install Mooncake runtime dependencies
+    - Verify required AscendC custom ops are registered (310p)
     exclude:
     - Run selected tests with device
     - Run selected tests without device
@@ -856,6 +972,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Doc Test
+  file: .github/workflows/schedule_doc_getting_started_test.yaml
   exclude_jobs: []
   jobs:
   - name: Plan doctests
@@ -900,6 +1017,7 @@ workflows:
     - Run Quick Start doctest
     exclude_chains: []
 - name: Docs link check
+  file: .github/workflows/schedule_doc_linkcheck.yaml
   exclude_jobs: []
   jobs:
   - name: Markdown link check
@@ -920,6 +1038,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Auto Doc Translate
+  file: .github/workflows/schedule_doc_translate.yaml
   exclude_jobs: []
   jobs:
   - name: translate
@@ -941,6 +1060,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: E2E-upstream
+  file: .github/workflows/schedule_e2e_upstream_test.yaml
   exclude_jobs: []
   jobs:
   - name: resolve-tag
@@ -994,18 +1114,11 @@ workflows:
     - Post Checkout vllm-project/vllm-ascend repo
     - Stop containers
     - Complete job
+    - Config mirrors
     exclude:
     - Run vllm-project/vllm test
     exclude_chains: []
   - name: ensure-csrc-cache / Build csrc cache (*
-    steps: []
-    exclude: []
-    exclude_chains: []
-  - name: e2e-upstream_singlecard
-    steps: []
-    exclude: []
-    exclude_chains: []
-  - name: e2e-upstream_online
     steps: []
     exclude: []
     exclude_chains: []
@@ -1028,6 +1141,8 @@ workflows:
     - Post Checkout vllm-project/vllm-ascend repo
     - Stop containers
     - Complete job
+    - Config mirrors
+    - Post Checkout vllm-project/vllm repo
     exclude:
     - Run vllm-project/vllm test
     exclude_chains: []
@@ -1051,10 +1166,12 @@ workflows:
     - Post Checkout vllm-project/vllm-ascend repo
     - Stop containers
     - Complete job
+    - Config mirrors
     exclude:
     - Run vllm-project/vllm test
     exclude_chains: []
 - name: Image Build and Push
+  file: .github/workflows/schedule_image_build_and_push.yaml
   exclude_jobs: []
   jobs:
   - name: setup-matrix
@@ -1062,6 +1179,8 @@ workflows:
     - Set up job
     - Build image matrix
     - Complete job
+    - Filter build matrix by chips
+    - Resolve effective build_type
     exclude: []
     exclude_chains: []
   - name: 310P Ubuntu / build (*
@@ -1087,6 +1206,7 @@ workflows:
     - Complete job
     - Record source commit
     - Upload source commit
+    - Validate inputs (workflow_dispatch only)
     exclude: []
     exclude_chains: []
   - name: A2 Ubuntu / build (*
@@ -1112,6 +1232,7 @@ workflows:
     - Complete job
     - Record source commit
     - Upload source commit
+    - Validate inputs (workflow_dispatch only)
     exclude: []
     exclude_chains: []
   - name: 310P openEuler / build (*
@@ -1137,6 +1258,7 @@ workflows:
     - Complete job
     - Record source commit
     - Upload source commit
+    - Validate inputs (workflow_dispatch only)
     exclude: []
     exclude_chains: []
   - name: A5 Ubuntu / build (*
@@ -1162,6 +1284,7 @@ workflows:
     - Complete job
     - Record source commit
     - Upload source commit
+    - Validate inputs (workflow_dispatch only)
     exclude: []
     exclude_chains: []
   - name: A3 Ubuntu / build (*
@@ -1187,6 +1310,7 @@ workflows:
     - Complete job
     - Record source commit
     - Upload source commit
+    - Validate inputs (workflow_dispatch only)
     exclude: []
     exclude_chains: []
   - name: A5 UBX openEuler / build (*
@@ -1262,6 +1386,7 @@ workflows:
     - Complete job
     - Record source commit
     - Upload source commit
+    - Validate inputs (workflow_dispatch only)
     exclude: []
     exclude_chains: []
   - name: A2 openeuler / build (*
@@ -1287,6 +1412,7 @@ workflows:
     - Complete job
     - Record source commit
     - Upload source commit
+    - Validate inputs (workflow_dispatch only)
     exclude: []
     exclude_chains: []
   - name: A3 openEuler / build (*
@@ -1312,6 +1438,7 @@ workflows:
     - Complete job
     - Record source commit
     - Upload source commit
+    - Validate inputs (workflow_dispatch only)
     exclude: []
     exclude_chains: []
   - name: 310P openEuler / merge-image
@@ -1359,6 +1486,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Image build lint
+  file: .github/workflows/schedule_lint_image_build.yaml
   exclude_jobs: []
   jobs:
   - name: vllm-ascend lint image build
@@ -1381,6 +1509,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Main2Main
+  file: .github/workflows/schedule_main2main.yaml
   exclude_jobs: []
   jobs:
   - name: resolve-source
@@ -1447,6 +1576,12 @@ workflows:
     - Stop containers
     - Complete job
     - Install Mooncake wheel
+    - Exclude vllm dir from ascend git
+    - Validate target commit
+    - Configure git identity
+    - Install vllm-ascend
+    - Create manual review issue
+    - Chain next run
     exclude: []
     exclude_chains: []
   - name: ensure-csrc-cache / Build csrc cache (*
@@ -1454,6 +1589,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Nightly Image Build (with base)
+  file: .github/workflows/schedule_nightly_image_build_with_base.yaml
   exclude_jobs: []
   jobs:
   - name: setup-matrix
@@ -1691,6 +1827,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Nightly-310P
+  file: .github/workflows/schedule_nightly_test_310p.yaml
   exclude_jobs: []
   jobs:
   - name: Parse trigger and determine test scope
@@ -1719,6 +1856,7 @@ workflows:
     - Checkout profiling tools
     - Normalize profiling options
     - Post Checkout profiling tools
+    - Post Checkout PR code
     exclude: []
     exclude_chains: []
   - name: single-node (*
@@ -1767,6 +1905,7 @@ workflows:
     - Upload AISBench outputs
     - Collect requested path
     - Upload requested path
+    - Post Checkout vllm-project/vllm-ascend repo
     exclude:
     - Run Pytest (py-driven)
     - Run Pytest (YAML-driven)
@@ -1783,6 +1922,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Nightly-A2
+  file: .github/workflows/schedule_nightly_test_a2.yaml
   exclude_jobs: []
   jobs:
   - name: Parse trigger and determine test scope
@@ -1806,6 +1946,7 @@ workflows:
     - Post Setup Python
     - Post Checkout repository
     - Complete job
+    - Post Checkout PR code
     exclude: []
     exclude_chains: []
   - name: Export global env vars as job outputs
@@ -1823,6 +1964,7 @@ workflows:
     - Checkout profiling tools
     - Normalize profiling options
     - Post Checkout profiling tools
+    - Post Checkout PR code
     exclude: []
     exclude_chains: []
   - name: multi-node (*
@@ -1872,7 +2014,10 @@ workflows:
     exclude: []
     exclude_chains: []
   - name: clear-pre-logs
-    steps: []
+    steps:
+    - Set up job
+    - Clear pre-logs on pvc
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: single-node-accuracy-tests (*
@@ -1902,6 +2047,7 @@ workflows:
     - Check layout and stage actions
     - Collect requested path
     - Upload requested path
+    - Post Checkout vllm-project/vllm-ascend repo
     exclude:
     - Run vllm-project/vllm-ascend accuracy test
     exclude_chains: []
@@ -1951,6 +2097,7 @@ workflows:
     - Upload AISBench outputs
     - Collect requested path
     - Upload requested path
+    - Post Checkout vllm-project/vllm-ascend repo
     exclude:
     - Run Pytest (py-driven)
     - Run Pytest (YAML-driven)
@@ -1975,6 +2122,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Nightly-A3
+  file: .github/workflows/schedule_nightly_test_a3.yaml
   exclude_jobs: []
   jobs:
   - name: Parse trigger and determine test scope
@@ -2043,6 +2191,7 @@ workflows:
     - Post Checkout code
     - Stop containers
     - Complete job
+    - Clear resources
     exclude: []
     exclude_chains: []
   - name: Parse single-node profiles
@@ -2086,6 +2235,7 @@ workflows:
     - Post Checkout code
     - Stop containers
     - Complete job
+    - Clear resources
     exclude: []
     exclude_chains: []
   - name: Parse multi-node profiles
@@ -2108,6 +2258,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Nightly-A3-560T
+  file: .github/workflows/schedule_nightly_test_a3_560t.yaml
   exclude_jobs: []
   jobs:
   - name: Build nightly-a3 image
@@ -2131,6 +2282,7 @@ workflows:
     - Normalize profiling options
     - Post Checkout profiling tools
     - Post Checkout PR code
+    - Run input_branch="releases/v0.32.0rc"
     exclude: []
     exclude_chains: []
   - name: single-node (*
@@ -2206,6 +2358,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Nightly-A5
+  file: .github/workflows/schedule_nightly_test_a5.yaml
   exclude_jobs: []
   jobs:
   - name: Parse trigger and determine test scope
@@ -2289,7 +2442,38 @@ workflows:
     - Run Pytest (YAML-driven)
     exclude_chains: []
   - name: multi-node (*
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Decode kubeconfig
+    - Checkout code
+    - Configure profiling
+    - Set job variables
+    - Prepare scripts
+    - Launch cluster
+    - Wait for pods ready
+    - Stream logs
+    - Update good_table.csv on success
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Fetch benchmark results from PVC
+    - Post process
+    - Collect requested paths from test pods
+    - Upload requested paths
+    - Remove uploaded archives from shared storage
+    - Collect Ascend logs
+    - Upload Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Post Checkout code
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: clear-pre-logs
@@ -2311,11 +2495,8 @@ workflows:
     steps: []
     exclude: []
     exclude_chains: []
-  - name: multi-node
-    steps: []
-    exclude: []
-    exclude_chains: []
 - name: Release Code and Wheel
+  file: .github/workflows/schedule_release_code_and_wheel.yml
   exclude_jobs: []
   jobs:
   - name: release code (*
@@ -2369,17 +2550,25 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Close stale resolved/wait-feedback issues
+  file: .github/workflows/schedule_stale_manage.yaml
   exclude_jobs: []
   jobs:
   - name: stale
-    steps: []
+    steps:
+    - Set up job
+    - Run actions/stale@v11
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: remove-wait-feedback-on-comment
-    steps: []
+    steps:
+    - Set up job
+    - Run gh issue edit "10145" --remove-label "wait-feedback"
+    - Complete job
     exclude: []
     exclude_chains: []
 - name: Schedule Test Coverage
+  file: .github/workflows/schedule_test_coverage.yaml
   exclude_jobs: []
   jobs:
   - name: select-full-tests
@@ -2395,6 +2584,7 @@ workflows:
     - Checkout coverage helper from main
     - Resolve refs and select tests
     - Post Checkout coverage helper from main
+    - Select test_suffix.py
     exclude: []
     exclude_chains: []
   - name: ensure-csrc-cache / Prepare csrc cache checks
@@ -2464,12 +2654,29 @@ workflows:
     - Install Mooncake runtime dependencies
     - Prepare coverage object names
     - Record current release coverage branch
+    - Upload coverage artifacts
+    - Verify required AscendC custom ops are registered (310p)
     exclude:
     - Run selected tests with device
     - Run selected tests without device
     exclude_chains: []
   - name: ensure-csrc-cache / Build csrc cache (*
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout source
+    - Config mirrors (ubuntu)
+    - Config mirrors (openeuler)
+    - Rebase on main snapshot
+    - Update submodules
+    - Install system dependencies (ubuntu)
+    - Install system dependencies (openeuler)
+    - Install vllm-ascend
+    - Verify csrc artifacts
+    - Save csrc cache
+    - Post Checkout source
+    - Stop containers
+    - Complete job
     exclude: []
     exclude_chains: []
   - name: ensure-csrc-cache (*
@@ -2507,6 +2714,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Weekly-310P
+  file: .github/workflows/schedule_weekly_test_310p.yaml
   exclude_jobs: []
   jobs:
   - name: Parse trigger and determine test scope
@@ -2532,6 +2740,7 @@ workflows:
     - Post Setup Python
     - Post Checkout repository
     - Complete job
+    - Post Checkout PR code
     exclude: []
     exclude_chains: []
   - name: single-node (*
@@ -2580,6 +2789,7 @@ workflows:
     - Upload requested path
     - Stop containers
     - Complete job
+    - Post Checkout vllm-project/vllm-ascend repo
     exclude:
     - Run Pytest (py-driven)
     - Run Pytest (YAML-driven)
@@ -2592,6 +2802,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Weekly-A2
+  file: .github/workflows/schedule_weekly_test_a2.yaml
   exclude_jobs: []
   jobs:
   - name: Parse trigger and determine test scope
@@ -2617,6 +2828,7 @@ workflows:
     - Post Checkout repository
     - Complete job
     - Cancel PR weekly runs before scheduled test
+    - Post Checkout PR code
     exclude: []
     exclude_chains: []
   - name: Merge benchmark artifacts into weekly-a2.zip
@@ -2660,6 +2872,7 @@ workflows:
     - Restore incremental cache for source checkout
     - Collect requested path
     - Upload requested path
+    - Post Checkout vllm-project/vllm-ascend repo
     exclude:
     - Run vllm-project/vllm-ascend accuracy test
     exclude_chains: []
@@ -2668,6 +2881,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Weekly-A3
+  file: .github/workflows/schedule_weekly_test_a3.yaml
   exclude_jobs: []
   jobs:
   - name: Parse trigger and determine test scope
@@ -2729,6 +2943,7 @@ workflows:
     - Post Checkout code
     - Stop containers
     - Complete job
+    - Clear resources
     exclude: []
     exclude_chains: []
   - name: single-node (*
@@ -2783,7 +2998,39 @@ workflows:
     - Run Pytest (YAML-driven)
     exclude_chains: []
   - name: double-node (*
-    steps: []
+    steps:
+    - Set up job
+    - Initialize containers
+    - Decode kubeconfig
+    - Checkout code
+    - Configure profiling
+    - Set job variables
+    - Prepare scripts
+    - Launch cluster
+    - Wait for pods ready
+    - Stream logs
+    - Update good_table.csv on success
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Fetch benchmark results from PVC
+    - Post process
+    - Collect requested paths from test pods
+    - Upload requested paths
+    - Remove uploaded archives from shared storage
+    - Collect Ascend logs
+    - Upload Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Post Checkout code
+    - Stop containers
+    - Complete job
+    - Clear resources
     exclude: []
     exclude_chains: []
   - name: Merge benchmark artifacts into weekly-a3.zip
@@ -2798,6 +3045,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Weekly-A3-560T
+  file: .github/workflows/schedule_weekly_test_a3_560t.yaml
   exclude_jobs: []
   jobs:
   - name: Parse trigger and determine test scope
@@ -2824,6 +3072,7 @@ workflows:
     - Post Checkout repository
     - Complete job
     - Cancel PR weekly runs before scheduled test
+    - Run {
     exclude: []
     exclude_chains: []
   - name: single-node (*
@@ -2884,6 +3133,7 @@ workflows:
     exclude: []
     exclude_chains: []
 - name: Slash Command Dispatch
+  file: .github/workflows/slash_command_dispatch.yml
   exclude_jobs: []
   jobs:
   - name: slashCommandDispatch

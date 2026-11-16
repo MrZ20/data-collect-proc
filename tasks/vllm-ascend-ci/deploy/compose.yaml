@@ -1,6 +1,6 @@
 services:
   collector:
-    image: data-collect-vllm-ascend-ci:0.1.0
+    image: data-collect-vllm-ascend-ci:0.1.1
     build:
       context: ../../..
       dockerfile: tasks/vllm-ascend-ci/Dockerfile

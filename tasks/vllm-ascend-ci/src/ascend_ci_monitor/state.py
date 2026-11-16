@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import sqlite3
 from typing import Iterator
+import zlib
 
 
 class State:
@@ -26,6 +27,10 @@ class State:
             CREATE TABLE IF NOT EXISTS outbox (
                 job_id INTEGER PRIMARY KEY, record TEXT NOT NULL,
                 acknowledged INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS http_cache (
+                key TEXT PRIMARY KEY, etag TEXT NOT NULL, payload BLOB NOT NULL,
+                window_end TEXT NOT NULL
             );
         """)
 
@@ -59,6 +64,25 @@ class State:
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, value),
         )
 
+    def get_http_cache(self, key: str) -> tuple[str, dict] | None:
+        row = self._db.execute("SELECT etag, payload FROM http_cache WHERE key = ?", (key,)).fetchone()
+        return (row[0], json.loads(zlib.decompress(row[1]))) if row else None
+
+    def put_http_cache(self, key: str, etag: str, payload: dict, window_end: str) -> None:
+        compressed = zlib.compress(json.dumps(payload, ensure_ascii=False).encode('utf-8'))
+        self._db.execute(
+            "INSERT INTO http_cache (key, etag, payload, window_end) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET etag = excluded.etag, "
+            "payload = excluded.payload, window_end = excluded.window_end",
+            (key, etag, compressed, window_end),
+        )
+
+    def delete_http_cache(self, key: str) -> None:
+        self._db.execute("DELETE FROM http_cache WHERE key = ?", (key,))
+
+    def prune_http_cache(self, before: str) -> None:
+        self._db.execute("DELETE FROM http_cache WHERE window_end < ?", (before,))
+
     def track_run(self, run_dict: dict) -> None:
         self._db.execute(
             "INSERT INTO runs (id, attempt, status) VALUES (?, ?, ?) "
@@ -70,6 +94,9 @@ class State:
         return [row[0] for row in self._db.execute(
             "SELECT id FROM runs WHERE status != 'completed' ORDER BY id"
         )]
+
+    def forget_run(self, run_id: int) -> None:
+        self._db.execute("DELETE FROM runs WHERE id = ?", (run_id,))
 
     def known_attempt(self, run_id: int) -> int | None:
         row = self._db.execute(

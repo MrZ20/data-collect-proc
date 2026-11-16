@@ -5,4 +5,4 @@ policy_path: configs/vllm-ascend-ci/workflows.yaml
 data_branch: data/vllm-ascend-ci
 state_dir: /state
 initial_hours: 1
-recheck_days: 7
+recheck_days: 2

@@ -94,3 +94,44 @@ def test_large_content_uses_blob_fallback(monkeypatch):
                                   Response(200, {'encoding': 'base64', 'content': encoded}))
     assert client.read_text('org/repo', 'file.yaml', 'main') == 'policy text'
     assert session.calls[1][1].endswith('/repos/org/repo/git/blobs/abc')
+
+
+def test_conditional_cache_revalidates_and_replaces_changed_data(monkeypatch, tmp_path):
+    from ascend_ci_monitor.state import State
+
+    client, session = client_with(monkeypatch,
+        Response(200, {'items': [1]}, {'ETag': '"first"'}),
+        Response(304, headers={'X-RateLimit-Remaining': '20'}),
+        Response(200, {'items': [2]}, {'ETag': '"second"'}),
+        Response(304),
+    )
+    with State(tmp_path / 'cache.sqlite') as state:
+        params = {'per_page': 100, 'page': 1}
+        assert client.get_cached('/runs', params, state, '2026-01-02') == {'items': [1]}
+        assert client.get_cached('/runs', {'page': 1, 'per_page': 100}, state, '2026-01-02') == {'items': [1]}
+        assert client.get_cached('/runs', params, state, '2026-01-02') == {'items': [2]}
+        assert client.get_cached('/runs', params, state, '2026-01-02') == {'items': [2]}
+    headers = [call[2]['headers'] for call in session.calls]
+    assert 'If-None-Match' not in headers[0]
+    assert [item['If-None-Match'] for item in headers[1:]] == ['"first"', '"first"', '"second"']
+    assert client.requests == 4 and client.cache_hits == 2
+
+
+def test_no_etag_clears_old_cache_and_failed_read_keeps_it(monkeypatch, tmp_path):
+    from ascend_ci_monitor.state import State
+
+    client, session = client_with(monkeypatch,
+        Response(200, {'items': [1]}, {'ETag': '"first"'}),
+        Response(404, {'message': 'missing'}),
+        Response(200, {'items': [2]}),
+        Response(200, {'items': [3]}),
+    )
+    with State(tmp_path / 'cache.sqlite') as state:
+        assert client.get_cached('/runs', {}, state, '2026-01-02') == {'items': [1]}
+        with pytest.raises(GitHubError):
+            client.get_cached('/runs', {}, state, '2026-01-02')
+        assert client.get_cached('/runs', {}, state, '2026-01-02') == {'items': [2]}
+        assert client.get_cached('/runs', {}, state, '2026-01-02') == {'items': [3]}
+    headers = [call[2]['headers'] for call in session.calls]
+    assert headers[1]['If-None-Match'] == headers[2]['If-None-Match'] == '"first"'
+    assert 'If-None-Match' not in headers[3]

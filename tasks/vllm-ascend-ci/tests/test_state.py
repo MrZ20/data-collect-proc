@@ -77,3 +77,18 @@ def test_outbox_persists_and_acknowledged_job_cannot_be_enqueued_twice(tmp_path)
         state.enqueue(7, {"message": "duplicate after ack"})
     with State(path) as state:
         assert state.pending() == []
+
+
+def test_http_cache_persists_compressed_and_prunes_old_windows(tmp_path):
+    path = tmp_path / 'cache.sqlite'
+    payload = {'workflow_runs': [{'name': '构建' * 100, 'id': 1}]}
+    with State(path) as state:
+        state.put_http_cache('old', '"etag1"', payload, '2026-01-01T00:00:00Z')
+        state.put_http_cache('current', '"etag2"', payload, '2026-01-02T00:00:00Z')
+        blob = state._db.execute('SELECT payload FROM http_cache WHERE key = ?', ('old',)).fetchone()[0]
+        assert len(blob) < len(str(payload).encode('utf-8'))
+    with State(path) as state:
+        assert state.get_http_cache('old') == ('"etag1"', payload)
+        state.prune_http_cache('2026-01-02T00:00:00Z')
+        assert state.get_http_cache('old') is None
+        assert state.get_http_cache('current') == ('"etag2"', payload)

@@ -29,6 +29,7 @@ class _JobRule:
 @dataclass(frozen=True)
 class _Workflow:
     name: str
+    file: str | None
     exclude_jobs: tuple[str, ...]
     jobs: tuple[_JobRule, ...]
 
@@ -75,6 +76,9 @@ class Policy:
         for workflow in workflow_data:
             workflow = _mapping(workflow, "workflow")
             name = _name(workflow.get("name"), "workflow name")
+            workflow_file = workflow.get("file")
+            if workflow_file is not None:
+                workflow_file = _name(workflow_file, "workflow file")
             exclude_jobs = _names(workflow.get("exclude_jobs", []), "exclude_jobs")
             jobs_data = workflow.get("jobs", [])
             if not isinstance(jobs_data, list):
@@ -100,7 +104,7 @@ class Policy:
                         raise ValueError("a chain must contain at least two steps")
                     chains.append(chain_steps)
                 jobs.append(_JobRule(job_name, steps, exclude, tuple(chains)))
-            workflows.append(_Workflow(name, exclude_jobs, tuple(jobs)))
+            workflows.append(_Workflow(name, workflow_file, exclude_jobs, tuple(jobs)))
         return cls(repository, threshold, tuple(workflows))
 
     @classmethod
@@ -112,6 +116,16 @@ class Policy:
         """Successful runs are needed only to reset configured failure streaks."""
         return any(rule.exclude or rule.chains for workflow in self._workflows
                    if workflow.name == workflow_name for rule in workflow.jobs)
+
+    def workflow_name(self, run: dict) -> str | None:
+        """Resolve the maintained workflow name despite a dynamic run display name."""
+        for workflow in self._workflows:
+            if workflow.file:
+                if workflow.file == run.get('path'):
+                    return workflow.name
+            elif workflow.name == run['name']:
+                return workflow.name
+        return None
 
     def evaluate(self, workflow_name: str, job: dict) -> Evaluation:
         workflows = [workflow for workflow in self._workflows if workflow.name == workflow_name]

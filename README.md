@@ -21,14 +21,15 @@
 - job 内 `exclude` 排除单次失败步骤。
 - `exclude_chains` 是同一次 job 执行中按顺序全部失败的步骤链。中间可有其他步骤，但链中的成功或跳过不算失败。先从原始失败集合匹配，再执行排除；链外失败仍进入候选。
 - job 名和普通 step 排除支持 `*` 通配符，也优先匹配完整字面名称；链内 step 使用精确名称。
-- 未登记的 job/step 默认纳入。没有失败 step 时不凭 job 结论生成候选；失败 job 缺步骤会补读一次，仍为空则记录警告，不补造步骤。
+- 已登记 workflow 内未登记的 job/step 默认纳入。没有失败 step 时不凭 job 结论生成候选；失败 job 缺步骤会补读一次，仍为空则记录警告，不补造步骤。
 - 普通排除步骤和链首步骤连续失败达到 `repeat_threshold` 后重新进入候选；链后续步骤不单独触发。成功打断连续失败，跳过不计数，同一个 run 的重跑不增加独立样本数（采用首次观察到的有效结果）。整 job 排除不会被重新纳入。
 
-```yaml
+````yaml
 repository: vllm-project/vllm-ascend
 repeat_threshold: 10
 workflows:
   - name: E2E
+    file: .github/workflows/pr_test.yaml
     exclude_jobs: [ci-gate]
     jobs:
       - name: example-test-job
@@ -36,58 +37,58 @@ workflows:
         exclude: [Run tests]
         exclude_chains:
           - chain1: [Run tests, Upload logs]
-```
+````
 
 链配置是 agent 维护的初筛假设，不代表程序证明了因果。首版没有证据充分的链，因此实际配置中的链暂时为空。
 
-首版采样了 96 次运行（包含补充的 5 次 E2E 运行），形成 57 个 workflow 条目、198 条 job 规则。12 个条目没有观察到 job，一些条件 job 只有跳过记录，所以 `steps` 为空。清单不宣称覆盖全部运行分支。E2E 的 `run-selected-tests*` 规则使用在同一 workflow 的 CPU 测试中观察到的两个用例步骤名进行排除；首次真实采集又补入了 upstream 测试、旧版 mypy 和 CODEOWNERS 审批步骤。其余尚未观察到的 NPU 步骤不编造。新步骤仍默认纳入。动态矩阵名已按保守前缀合并，runner 和矩阵不参与筛选。
+清单由本次人工/agent 分析直接初始化，之后由 agent 在私仓维护；项目不提供生成或回填 workflow/step 清单的初始化功能。当前登记 44 个 workflow、191 条 job 规则，均已核对为 `main` 上仍存在、Actions 中启用且可独立触发的 workflow。13 个仅含 `workflow_call` 的复用定义不单列，它们的运行时 job 归在实际调用的 workflow 下。审查对应上游 main 提交 `c3d1d1fc1dbaee5c38c0601d23be99f14129fa46`。`file` 是 workflow 文件路径，用它匹配 run，避免 `(PR) 21990` 等动态显示名导致漏采，也无需额外请求注册表；候选的 `workflow` 统一使用清单名。这里按 `main` 的定义确定采集范围，仍采集这些 workflow 的 PR、分支、定时和手动运行。
+
+此次从真实运行记录补入 15 条缺项 job 规则，新增 273 个步骤关联，移除 6 条重复 job 占位规则，保留所有现有排除项。目前还有 54 条 job 规则未取得实际步骤：51 条在采样历史中只匹配到 skipped job，3 条匹配到已完成但步骤为空的记录；不编造步骤。清单是初筛依据，已登记 workflow 内的新 job/step 默认纳入候选，未登记 workflow 不获取 job 或生成候选。数据目录、SQLite 建表、首次扫描起点、游标和上传队列等必要的数据初始化仍由程序正常完成。
 
 ## 本地运行
 
 要求 Python 3.12+，所有本地安装和测试使用项目虚拟环境：
 
-```bash
+````bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -e 'tasks/vllm-ascend-ci[test]'
 .venv/bin/python -m pytest tasks/vllm-ascend-ci/tests -q
 .venv/bin/ascend-ci validate-policy configs/vllm-ascend-ci/workflows.yaml
-```
+````
 
 token 文件只包含一行 token，不放进仓库。可以用 `--token-file /path/to/token`，也可以设置 `GITHUB_TOKEN_FILE`。分离读写凭据时使用 `GITHUB_READ_TOKEN_FILE` 和 `GITHUB_WRITE_TOKEN_FILE`：前者读取源仓库，后者读取私仓配置并上传数据。
 
-```bash
-# 合并新的运行时步骤，保留已有排除规则；不自动上传配置。
-.venv/bin/ascend-ci --token-file /path/to/token discover \
-  --output configs/vllm-ascend-ci/workflows.yaml --samples 2
-
+````bash
 # 从私仓同步规则，采集一轮并上传。
 .venv/bin/ascend-ci --token-file /path/to/token collect
 
 # 采集进本地 outbox，暂不上传；之后只重试上传。
 .venv/bin/ascend-ci --token-file /path/to/token collect --no-upload
 .venv/bin/ascend-ci --token-file /path/to/token publish
-```
+````
 
 部署参数使用 `--config /path/to/config.yaml`，示例见任务的 `deploy/config.example.yaml`。本地不传配置时，SQLite 和配置缓存默认保存在 `./state/vllm-ascend-ci/`。容器配置使用 `/state`。
 
-`discover` 从当前默认分支的文件列表过滤已删除的历史 workflow，再读取实际运行记录；不解析源码中的复用关系。重新发现会保留已有通配规则，并补充新观察到的精确 job 名，agent 可继续合并冗余条目。
+
 
 ## 采集与输出
 
-首次默认扫描最近一小时，加十分钟重叠窗口。以后使用本地游标，持续跟踪未完成运行，并每 24 小时回扫最近七天以发现旧 run 的重跑。更早的历史重跑不保证捕获。配置更新作用于之后处理的执行，不自动重新分析已处理 job。
+首次默认扫描最近一小时，加十分钟重叠窗口，将实际起点持久化为 `collection_started_at`。以后按游标补采，并重叠十分钟；每轮同时回查最近两天创建的 run，及时发现 attempt 增加的重跑。所有批量扫描都不会早于首次起点。两天是原始 run 的创建时间范围，不是重跑开始时间；更早且已完成的 run 不追查重跑。已登记但未完成的 run 持续跟踪到结束，即使已超出两天。停机超过两天时仍补齐停机期间的新 run。配置更新作用于之后处理的执行，不自动重新分析已处理 job。
+
+旧版状态没有保存首次起点，不能从移动后的游标准确还原；通用升级会保守使用旧游标作为下界并记录警告。此次服务器升级根据首次真实采集日志恢复了准确下界 `2026-11-16T07:28:40Z`。
 
 程序只读取状态，不下载日志或 PR diff。候选按日写入私仓 `data/vllm-ascend-ci` 分支：
 
-```text
+````text
 data/YYYY-MM-DD.jsonl
 reports/YYYY-MM-DD.md
-```
+````
 
 每条 JSONL 只有 `time`（UTC）、`workflow`、`job`、`failed_steps`、`runner`、`base_repo`、`url`；连续失败重新纳入时加 `consecutive_failures`。`failed_steps` 保留该 job 的全部失败步骤，便于 agent 理解上下文。agent 沿 job 链接自行读取日志等信息。
 
-SQLite 保存采集游标、待完成运行、去重、连续失败记录和待上传记录。上传失败不会丢失 outbox。每批 JSONL 与 Markdown 同一次提交，重试按 job URL 去重，不强制覆盖远端分支。没有新增数据则不提交。使用文件锁防止同一状态目录被同时采集。
+SQLite 保存固定采集起点、游标、待完成运行、去重、连续失败记录、压缩的 HTTP 缓存和待上传记录。上传失败不会丢失 outbox。每批 JSONL 与 Markdown 同一次提交，重试按 job URL 去重，不强制覆盖远端分支。没有新增数据则不提交。使用文件锁防止同一状态目录被同时采集。
 
-采集先按每页 100 条批量获取 run 元数据，再在本地筛选：跳过已处理的相同 attempt、尚未执行的首次 queued run 和 skipped run；成功 run 只有在该 workflow 配置了需要连续失败统计的步骤时才获取 job。随后一次分页 job 列表获取所有 attempt 的 job/step、runner 和链接，不对每个步骤单独查询；只对失败且缺步骤的 job 补读一次。不做连续失败统计的成功 run 中被 `continue-on-error` 吞掉的失败不保证捕获。
+采集将创建时间范围切成固定整点窗口，每页批量获取 100 条 run 元数据；达到 GitHub 的 1000 条搜索上限时继续拆分窗口。按 run ID 去重，检查分页总数与实际条数；发现翻页变化就重读该窗口一次，仍不一致则本轮失败且不推进游标。固定窗口结合 ETag 条件请求，未变化的页面使用 304 和本地缓存；仍会发 HTTP 请求，但[认证的 304 不消耗主要 API 限额](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#use-conditional-requests-if-appropriate)。缓存也会重新验证，不能用旧缓存掩盖网络失败。随后在本地筛选：跳过未登记 workflow、已处理的相同 attempt、尚未执行的首次 queued run 和 skipped run；成功 run 只有在该 workflow 配置了需要连续失败统计的步骤时才获取 job。随后对新 run、未完成 run 和 attempt 改变的 run，分页获取所有 attempt 的 job/step、runner 和链接，不对每个步骤单独查询；只对失败且缺步骤的 job 补读一次。不做连续失败统计的成功 run 中被 `continue-on-error` 吞掉的失败不保证捕获。
 
 HTTP 连接复用。读取请求对连接错误、超时、临时 5xx 和限流最多尝试三次；按退避、`Retry-After` 或剩余额度重置时间等待。需要等待超过 60 秒则退出，保留状态供下一轮重试。写操作不盲目重放：提交响应丢失时先重读远端、按 URL 去重，再有限重试整批上传。
 
@@ -95,37 +96,37 @@ HTTP 连接复用。读取请求对连接错误、超时、临时 5xx 和限流�
 
 从仓库根目录构建（在 ARM64 机器上构建即得到 ARM64 镜像）：
 
-```bash
+````bash
 docker build -f tasks/vllm-ascend-ci/Dockerfile \
-  -t data-collect-vllm-ascend-ci:0.1.0 .
-```
+  -t data-collect-vllm-ascend-ci:0.1.1 .
+````
 
 服务器约定目录：
 
-```text
+````text
 /opt/data-collect-proc/
   source/                         # 本仓库代码
   config.yaml                     # 从 config.example.yaml 复制
   secrets/github_token            # 不进入 source 或镜像
   state/vllm-ascend-ci/            # 持久化 SQLite/outbox
-```
+````
 
 镜像以 UID/GID 10001 运行。服务器管理员准备权限：
 
-```bash
+````bash
 install -d -m 755 /opt/data-collect-proc/state/vllm-ascend-ci
 install -d -m 700 /opt/data-collect-proc/secrets
 chown -R 10001:10001 /opt/data-collect-proc/state/vllm-ascend-ci
 chown 10001:10001 /opt/data-collect-proc/secrets/github_token
 chmod 400 /opt/data-collect-proc/secrets/github_token
-```
+````
 
 手动执行一轮：
 
-```bash
+````bash
 cd /opt/data-collect-proc/source
 tasks/vllm-ascend-ci/deploy/run.sh
-```
+````
 
 `run.sh` 只依赖 Docker Engine，无需 Compose；服务器 `zsl-arm64` 使用此入口。安装了 Compose 的机器也可使用提供的 `deploy/compose.yaml`。`run.sh publish` 只重试上传，`run.sh collect --no-upload` 只采集。
 
@@ -135,7 +136,7 @@ tasks/vllm-ascend-ci/deploy/run.sh
 
 后续决定开启定时采集时，手动安装 timer；本次验证没有启用它：
 
-```bash
+````bash
 sudo install -m 644 tasks/vllm-ascend-ci/deploy/collector.service \
   /etc/systemd/system/ascend-ci-collector.service
 sudo install -m 644 tasks/vllm-ascend-ci/deploy/collector.timer \
@@ -143,15 +144,15 @@ sudo install -m 644 tasks/vllm-ascend-ci/deploy/collector.timer \
 sudo systemctl daemon-reload
 sudo systemctl enable --now ascend-ci-collector.timer
 journalctl -u ascend-ci-collector.service
-```
+````
 
 定时器在每小时第七分钟附近运行。每个新增任务使用自己的镜像、服务、配置和状态目录；暂不引入共享任务框架。
 
 ## 已完成的验证（2026-11-16）
 
-- 本地项目虚拟环境与 `zsl-arm64` 的 Python 3.12 基础容器均通过 33 项测试，覆盖步骤链、去重、增量采集、重跑统计、网络退避和上传响应丢失。
-- 在基础容器内先手动创建虚拟环境、安装包、运行测试与真实采集，再将成功流程写入 Dockerfile。
-- 批量筛选后的增量验证：扫描 308 个 run，仅查询 40 个 run 的 job，总共 75 次 API 请求；新增 2 条候选，上传队列归零。
-- 最终 Docker 镜像通过 `run.sh` 实测：扫描 219 个 run，仅查询 36 个 run 的 job，总共 98 次 API 请求；新增 3 条候选，上传队列归零。这是不同时间窗口的实测记录，不是固定数据集上的性能对照。
-- 镜像为 `data-collect-vllm-ascend-ci:0.1.0`，架构 `arm64`，运行身份 `10001:10001`；镜像 ID 为 `sha256:018ee95be2f8b7c009547aa70873f152aabd5d67a39b85369c90500da6b2e338`。
+- 本地项目虚拟环境和 `zsl-arm64` 的 0.1.1 镜像均通过 43 项测试，覆盖首次边界、两天内重跑、窗口外待完成运行、翻页变化、workflow 文件范围及动态显示名筛选、ETag 缓存、网络退避及上传去重。
+- 首次部署曾在 Python 3.12 基础容器内手动创建虚拟环境、安装包、运行测试与真实采集，再将成功流程写入 Dockerfile；此次按 Dockerfile 重新构建验证。
+- 最终镜像真实采集扫描 2181 个 run，仅查询 28 个 run 的 job：共 59 次 API 请求，其中 12 次元数据请求返回 304；处理 130 个新 job，新增并上传 5 条候选，上传队列归零，固定起点保持 `2026-11-16T07:28:40Z`。
+- 服务器旧 SQLite 已备份为 `state-before-0.1.1.sqlite3`，恢复固定首次边界并将 `recheck_days` 改为 2。
+- 镜像为 `data-collect-vllm-ascend-ci:0.1.1`，架构 `arm64`，运行身份 `10001:10001`；镜像 ID 为 `sha256:f863f1f33e5ef96480b663300fbb69856b3efbce4a5431058a828faa279c3dfd`。
 - 服务器代码、配置、状态和运行时 token 已放置到上述目录；没有安装或启用定时器。token 不在 Git 或镜像中。
