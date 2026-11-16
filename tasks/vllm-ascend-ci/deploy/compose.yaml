@@ -1,0 +1,16 @@
+services:
+  collector:
+    image: data-collect-vllm-ascend-ci:0.1.0
+    build:
+      context: ../../..
+      dockerfile: tasks/vllm-ascend-ci/Dockerfile
+    command: ["--config", "/config.yaml", "collect"]
+    environment:
+      GITHUB_TOKEN_FILE: /run/secrets/github_token
+    volumes:
+      - ${DEPLOY_DIR:-/opt/data-collect-proc}/config.yaml:/config.yaml:ro
+      - ${DEPLOY_DIR:-/opt/data-collect-proc}/state/vllm-ascend-ci:/state
+      - ${DEPLOY_DIR:-/opt/data-collect-proc}/secrets/github_token:/run/secrets/github_token:ro
+    read_only: true
+    tmpfs:
+      - /tmp

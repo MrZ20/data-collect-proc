@@ -1,0 +1,11 @@
+[Unit]
+Description=Collect vLLM Ascend CI failures hourly
+
+[Timer]
+OnCalendar=*-*-* *:07:00
+RandomizedDelaySec=60
+Persistent=true
+Unit=ascend-ci-collector.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ascend-ci-collector"
+version = "0.1.0"
+description = "Collect runtime GitHub Actions failures for agent triage"
+requires-python = ">=3.12"
+dependencies = ["PyYAML==6.0.3", "requests==2.32.5"]
+
+[project.optional-dependencies]
+test = ["pytest==9.0.2"]
+
+[project.scripts]
+ascend-ci = "ascend_ci_monitor.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

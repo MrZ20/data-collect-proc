@@ -1,0 +1,2895 @@
+repository: vllm-project/vllm-ascend
+repeat_threshold: 10
+workflows:
+- name: Build csrc Cache
+  exclude_jobs: []
+  jobs: []
+- name: Collect published image information
+  exclude_jobs: []
+  jobs: []
+- name: e2e nightly test multi_node
+  exclude_jobs: []
+  jobs: []
+- name: e2e nightly test
+  exclude_jobs: []
+  jobs: []
+- name: e2e nightly test 560t
+  exclude_jobs: []
+  jobs: []
+- name: e2e nightly models test
+  exclude_jobs: []
+  jobs: []
+- name: Parse nightly profiling traces
+  exclude_jobs: []
+  jobs: []
+- name: Ensure csrc Cache
+  exclude_jobs: []
+  jobs: []
+- name: Nightly image build
+  exclude_jobs: []
+  jobs:
+  - name: build-and-sync (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Image_oncall
+  exclude_jobs: []
+  jobs: []
+- name: Nightly image build with base
+  exclude_jobs: []
+  jobs: []
+- name: Selected Tests
+  exclude_jobs: []
+  jobs: []
+- name: Selected Tests Upstream
+  exclude_jobs: []
+  jobs: []
+- name: CI Gate Comment
+  exclude_jobs: []
+  jobs:
+  - name: comment
+    steps:
+    - Set up job
+    - Download gate result artifact
+    - Download unclaimed-file list artifact
+    - Post or remove the failure comment
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Issue Create/Update Labeler
+  exclude_jobs: []
+  jobs:
+  - name: triage
+    steps:
+    - Set up job
+    - Run github/issue-labeler@v3.4
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Merge Conflict Labeler
+  exclude_jobs: []
+  jobs:
+  - name: main
+    steps:
+    - Set up job
+    - check if prs are dirty
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: PR Create
+  exclude_jobs: []
+  jobs:
+  - name: PR create action
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Fetch required files
+    - Get vLLM main commit
+    - Update PR description
+    - Label the PR
+    - Remind contributors on PR open
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Handle /wait-feedback Command
+  exclude_jobs: []
+  jobs:
+  - name: Add wait-feedback label
+    steps:
+    - Set up job
+    - Check user authorization
+    - Post unauthorized comment
+    - Fail if unauthorized
+    - Add wait-feedback label
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: model downloader
+  exclude_jobs: []
+  jobs:
+  - name: Download models from ModelScope
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Nightly Image Build Schedule
+  exclude_jobs: []
+  jobs:
+  - name: build-310p
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: build-a5
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: build-a3
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: build-a2
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Handle /cancel Command
+  exclude_jobs: []
+  jobs:
+  - name: Force-cancel CI runs
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Check user authorization
+    - Post unauthorized comment
+    - Fail if unauthorized
+    - Force-cancel workflow runs
+    - Comment result on PR
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Handle /cherry-pick Command
+  exclude_jobs: []
+  jobs:
+  - name: Cherry-pick PR to target branch
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Check user authorization
+    - Parse target branch
+    - Post unauthorized comment
+    - Post invalid-args comment
+    - Fail if unauthorized or invalid args
+    - Checkout repo
+    - Cherry-pick and create PR
+    - Comment success result
+    - Comment refreshed result
+    - Comment already included
+    - Comment conflict failure
+    - Comment generic failure
+    - Post Checkout repo
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Cancel runs on PR close
+  exclude_jobs: []
+  jobs:
+  - name: cancel
+    steps:
+    - Set up job
+    - Run actions/github-script@v9
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Handle /e2e Command
+  exclude_jobs: []
+  jobs:
+  - name: Run /e2e tests
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Check user authorization
+    - Post workflow URL
+    - Post unauthorized comment
+    - Fail if unauthorized
+    - Checkout repo
+    - Read verified vLLM refs
+    - Resolve PR info and test names
+    - Validate test paths
+    - Categorize tests by runner
+    - Fail if no valid tests
+    - Post Checkout repo
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache / Prepare csrc cache checks
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install csrc cache dependencies
+    - Checkout source
+    - Checkout cache workflow helpers
+    - Rebase on main snapshot
+    - Calculate csrc hash
+    - Resolve requested cache targets
+    - Detect OBS writer credentials
+    - Look up csrc cache (a2-arm64-ubuntu)
+    - Look up csrc cache (a3-arm64-ubuntu)
+    - Look up csrc cache (310p-arm64-ubuntu)
+    - Look up csrc cache (a5-arm64-ubuntu)
+    - Summarize csrc cache results
+    - Post Checkout cache workflow helpers
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: e2e-comment (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check NPU availability
+    - Install packages
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Checkout vllm-project/vllm-ascend repo
+    - Rebase on main snapshot
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Check layout and stage actions
+    - Restore incremental cache
+    - Install Mooncake runtime dependencies
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for selected tests
+    - Build MemFabric AccOffload for sparse KV lifecycle test
+    - Verify required AscendC custom ops are registered
+    - Install vllm-project/vllm-ascend no device
+    - Uninstall Triton for 310P tests
+    - Run selected tests with device
+    - Run selected tests without device
+    - Upload timing data
+    - Upload coverage data
+    - Upload selected test logs
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Post Checkout vllm-project/vllm repo
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run selected tests with device
+    - Run selected tests without device
+    exclude_chains: []
+  - name: ensure-csrc-cache / Build csrc cache (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Report result
+    steps:
+    - Set up job
+    - Update comment with result
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Handle /nightly Command
+  exclude_jobs: []
+  jobs:
+  - name: Check user authorization
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Checkout repository
+    - Check user authorization
+    - Post unauthorized comment
+    - Fail if unauthorized
+    - Check command block window
+    - Post blocked comment
+    - Install Python dependencies
+    - Resolve test cases and branch
+    - Post Checkout repository
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Post workflow links
+    steps:
+    - Set up job
+    - Build comment body
+    - Post workflow URLs
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Nightly-310P
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Weekly-A3-560T
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Nightly-A3-560T
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Nightly-A5
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Build presmoke images
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Nightly-A2
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Weekly-A2
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Weekly-310P
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Weekly-A3
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Trigger Nightly-A3
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Handle /rerun Command
+  exclude_jobs: []
+  jobs:
+  - name: Re-run failed CI jobs
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Check user authorization
+    - Post unauthorized comment
+    - Fail if unauthorized
+    - Re-run failed jobs
+    - Comment result on PR
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Handle /revert Command
+  exclude_jobs: []
+  jobs:
+  - name: Revert merged PR
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install system dependencies
+    - Check user authorization
+    - Verify PR is merged
+    - Post unauthorized comment
+    - Post not-merged comment
+    - Fail if unauthorized or not merged
+    - Checkout repo
+    - Revert and create PR
+    - Comment success result
+    - Comment refreshed result
+    - Comment conflict failure
+    - Comment missing branch failure
+    - Comment missing commit failure
+    - Comment generic failure
+    - Post Checkout repo
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Handle /run Command
+  exclude_jobs: []
+  jobs:
+  - name: Trigger E2E on the latest commit
+    steps:
+    - Set up job
+    - Initialize containers
+    - Preflight
+    - Check user authorization
+    - Post unauthorized comment
+    - Fail if unauthorized
+    - Check that the pull request can still be tested
+    - Post not-testable comment
+    - Fail if the pull request cannot be tested
+    - Check for a run already in flight on this commit
+    - Post already-running comment
+    - Post awaiting-approval comment
+    - Post lookup-failure comment
+    - Fail if the lookup failed
+    - Re-arm ci-run label to emit a labeled event
+    - Comment result on PR (previous run on this commit passed)
+    - Comment result on PR
+    - Comment trigger failure on PR
+    - Fail the job after a failed trigger
+    - Fail if the trigger did not happen
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Supplement New Tests
+  exclude_jobs: []
+  jobs:
+  - name: Supplement New Tests
+    steps:
+    - Set up job
+    - Checkout repository
+    - Setup Python
+    - Resolve supported target branch
+    - Collect new or moved tests
+    - Merge into OBS extra_recommended_tests.yaml
+    - Upload extra_recommended_tests.yaml to OBS
+    - Post Setup Python
+    - Post Checkout repository
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: E2E
+  exclude_jobs:
+  - ci-gate
+  jobs:
+  - name: pre-commit
+    steps:
+    - Set up job
+    - Initialize containers
+    - Validate PR title prefix
+    - Checkout vllm-project/vllm-ascend repo
+    - Read verified vLLM refs
+    - cp problem matchers
+    - Run echo "::add-matcher::$RUNNER_TEMP/actionlint.json"
+    - Run echo "::add-matcher::$RUNNER_TEMP/markdownlint.json"
+    - Run echo "::add-matcher::$RUNNER_TEMP/mypy.json"
+    - Checkout vllm-project/vllm repo
+    - Run dorny/paths-filter@v4
+    - Install vllm-ascend dev (conditional)
+    - Install and run Gitleaks Secret Scan
+    - Get pre-commit config hash
+    - Restore pre-commit cache
+    - Run pre-commit
+    - Run mypy
+    - Post Checkout vllm-project/vllm repo
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    - Prepare CI metadata
+    - Register problem matchers
+    - Run mypy for Python 3.10, 3.11 and 3.12 in parallel
+    exclude:
+    - Validate PR title prefix
+    - Run pre-commit
+    - Run mypy
+    - Run mypy for Python 3.10, 3.11 and 3.12 in parallel
+    exclude_chains: []
+  - name: cpu-ut (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check NPU availability
+    - Install packages
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Checkout vllm-project/vllm-ascend repo
+    - Rebase on releases/v0.30.0 snapshot
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Restore incremental cache
+    - Install Mooncake wheel
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for selected tests
+    - Verify required AscendC custom ops are registered
+    - Install vllm-project/vllm-ascend no device
+    - Uninstall Triton for 310P tests
+    - Run selected tests with device
+    - Run selected tests without device
+    - Upload timing data
+    - Upload coverage data
+    - Upload selected test logs
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Post Checkout vllm-project/vllm repo
+    - Stop containers
+    - Complete job
+    - Rebase on main snapshot
+    - Check layout and stage actions
+    - Install Mooncake runtime dependencies
+    - Build MemFabric AccOffload for sparse KV lifecycle test
+    exclude:
+    - Run selected tests with device
+    - Run selected tests without device
+    exclude_chains: []
+  - name: Recommend tests
+    steps:
+    - Set up job
+    - Checkout vllm-ascend scripts
+    - Download test case map and coverage package
+    - Recommend tests for current PR
+    - Merge extra tests from YAML
+    - Export coverage paths output
+    - Post Checkout vllm-ascend scripts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: ci-gate
+    steps:
+    - Set up job
+    - Check all required jobs
+    - Complete job
+    - Package gate result
+    - Upload gate result for the comment bot
+    exclude: []
+    exclude_chains: []
+  - name: select-tests
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Resolve source snapshot
+    - Validate test coverage config
+    - Decide test selection mode
+    - Select tests from coverage recommendations
+    - Select all tests
+    - Set no-tests output when no tests selected
+    - Select A5 tests
+    - Set no-tests output for A5 when not requested or source paths unchanged
+    - Add upstream test cache target
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: run-selected-tests-a5 (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: run-selected-tests-upstream (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: prepare-csrc-cache
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: run-selected-tests (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: codeowner-approval
+    steps:
+    - Set up job
+    - Checkout repo
+    - CODEOWNERS coverage check
+    - CODEOWNERS approval check
+    - Upload gate details for the comment bot
+    - Post Checkout repo
+    - Complete job
+    exclude:
+    - CODEOWNERS approval check
+    exclude_chains: []
+  - name: prepare-csrc-cache / Prepare csrc cache checks
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install csrc cache dependencies
+    - Checkout source
+    - Checkout cache workflow helpers
+    - Rebase on main snapshot
+    - Calculate csrc hash
+    - Resolve requested cache targets
+    - Detect OBS writer credentials
+    - Look up csrc cache (a2-arm64-ubuntu)
+    - Look up csrc cache (a3-arm64-ubuntu)
+    - Look up csrc cache (310p-arm64-ubuntu)
+    - Look up csrc cache (a5-arm64-ubuntu)
+    - Summarize csrc cache results
+    - Post Checkout cache workflow helpers
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: prepare-csrc-cache / Build csrc cache (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: run-selected-tests*
+    steps:
+    - Run vllm-project/vllm test
+    exclude:
+    - Run selected tests with device
+    - Run selected tests without device
+    - Run vllm-project/vllm test
+    exclude_chains: []
+- name: Cache csrc Build Artifacts
+  exclude_jobs: []
+  jobs:
+  - name: prepare-targets
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout source
+    - Resolve all cache targets
+    - Calculate csrc hash
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: build-cache (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout source
+    - Install packages (ubuntu)
+    - Install packages (openeuler)
+    - Rebase on  snapshot
+    - Update submodules
+    - Install system dependencies (ubuntu)
+    - Install system dependencies (openeuler)
+    - Check layout and stage actions
+    - Restore incremental build cache
+    - Install vllm-ascend
+    - Verify csrc artifacts
+    - Save incremental build cache
+    - Save csrc cache
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Cache pre-commit
+  exclude_jobs: []
+  jobs:
+  - name: build-cache
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Get pre-commit config hash
+    - Check if cache exists
+    - Clean stale pre-commit cache
+    - Run pre-commit (populate cache)
+    - Save pre-commit cache
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run pre-commit (populate cache)
+    exclude_chains: []
+- name: Recipes Preview Comment
+  exclude_jobs: []
+  jobs:
+  - name: select-prs
+    steps:
+    - Set up job
+    - Select PRs to refresh
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: comment (*
+    steps:
+    - Set up job
+    - Create or update the recipe preview comment
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: comment
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Recipes Preview
+  exclude_jobs: []
+  jobs:
+  - name: dispatch
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install GitHub CLI
+    - Create a token for vllm-project/recipes
+    - Dispatch to vllm-project/recipes
+    - Post Create a token for vllm-project/recipes
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Recipes
+  exclude_jobs: []
+  jobs:
+  - name: Recipes / Validate
+    steps:
+    - Set up job
+    - Check out the recipes under review
+    - Check out the renderer
+    - Run pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+    - Run actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+    - Install renderer dependencies
+    - Validate
+    - Post Run actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+    - Post Run pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+    - Post Check out the renderer
+    - Post Check out the recipes under review
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Schedule Daily Tests
+  exclude_jobs: []
+  jobs:
+  - name: daily-select-tests
+    steps:
+    - Set up job
+    - Initialize containers
+    - Run actions/checkout@v7
+    - Resolve daily config source
+    - Resolve daily test cases
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: select-all-tests
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Resolve refs
+    - Select all tests
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Dispatch Nightly-A3-560T daily subset
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install gh
+    - Dispatch nightly-a3-560t with daily subset
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Dispatch Nightly-A2 daily subset
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Dispatch Nightly-A3 daily subset
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Dispatch Nightly-A5 daily subset
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache / Prepare csrc cache checks
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install csrc cache dependencies
+    - Checkout source
+    - Checkout cache workflow helpers
+    - Rebase on main snapshot
+    - Calculate csrc hash
+    - Resolve requested cache targets
+    - Detect OBS writer credentials
+    - Look up csrc cache (a2-arm64-ubuntu)
+    - Look up csrc cache (a3-arm64-ubuntu)
+    - Look up csrc cache (310p-arm64-ubuntu)
+    - Look up csrc cache (a5-arm64-ubuntu)
+    - Summarize csrc cache results
+    - Post Checkout cache workflow helpers
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache / Build csrc cache (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout source
+    - Install packages (ubuntu)
+    - Install packages (openeuler)
+    - Rebase on main snapshot
+    - Update submodules
+    - Install system dependencies (ubuntu)
+    - Install system dependencies (openeuler)
+    - Check layout and stage actions
+    - Restore incremental build cache
+    - Install vllm-ascend
+    - Verify csrc artifacts
+    - Save incremental build cache
+    - Save csrc cache
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: run-all-tests (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check NPU availability
+    - Install packages
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Checkout vllm-project/vllm-ascend repo
+    - Rebase on main snapshot
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Check layout and stage actions
+    - Restore incremental cache
+    - Install Mooncake wheel
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for selected tests
+    - Verify required AscendC custom ops are registered
+    - Install vllm-project/vllm-ascend no device
+    - Uninstall Triton for 310P tests
+    - Run selected tests with device
+    - Run selected tests without device
+    - Upload timing data
+    - Upload coverage data
+    - Upload selected test logs
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Post Checkout vllm-project/vllm repo
+    - Stop containers
+    - Complete job
+    - Install Mooncake runtime dependencies
+    exclude:
+    - Run selected tests with device
+    - Run selected tests without device
+    exclude_chains: []
+  - name: update-estimated-times
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Doc Test
+  exclude_jobs: []
+  jobs:
+  - name: Plan doctests
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout source
+    - Install doctest tooling
+    - Build doctest plan
+    - Publish doctest plan
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Installation (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout source
+    - Show test environment
+    - Check layout and stage actions
+    - Restore incremental cache for source installation
+    - Run Installation doctest
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run Installation doctest
+    exclude_chains: []
+  - name: Quick Start (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout source
+    - Show test environment
+    - Run Quick Start doctest
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run Quick Start doctest
+    exclude_chains: []
+- name: Docs link check
+  exclude_jobs: []
+  jobs:
+  - name: Markdown link check
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install checkout runtime
+    - Checkout vllm-project/vllm-ascend repo
+    - Collect changed files
+    - Install checker dependencies
+    - Run full link check
+    - Run link check for changed docs
+    - Publish summary
+    - Upload linkcheck reports
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Auto Doc Translate
+  exclude_jobs: []
+  jobs:
+  - name: translate
+    steps:
+    - Set up job
+    - Checkout repository
+    - Setup git and branch
+    - Setup Python
+    - Build docs and generate PO files
+    - Detect PO files to translate
+    - Translate PO files
+    - Validate translation coverage
+    - Process translated files
+    - Commit and push
+    - Create PR in upstream
+    - Post Setup Python
+    - Post Checkout repository
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: E2E-upstream
+  exclude_jobs: []
+  jobs:
+  - name: resolve-tag
+    steps:
+    - Set up job
+    - Run actions/checkout@v7
+    - Read vLLM release tag
+    - Post Run actions/checkout@v7
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache / Prepare csrc cache checks
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install csrc cache dependencies
+    - Checkout source
+    - Checkout cache workflow helpers
+    - Rebase on  snapshot
+    - Calculate csrc hash
+    - Resolve requested cache targets
+    - Detect OBS writer credentials
+    - Look up csrc cache (a2-arm64-ubuntu)
+    - Look up csrc cache (a3-arm64-ubuntu)
+    - Look up csrc cache (310p-arm64-ubuntu)
+    - Look up csrc cache (a5-arm64-ubuntu)
+    - Summarize csrc cache results
+    - Post Checkout cache workflow helpers
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: e2e-upstream_multicard (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Check npu and CANN info
+    - Install packages
+    - Install system dependencies
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for A2 upstream tests
+    - Run vllm-project/vllm test
+    - Post Checkout vllm-project/vllm repo
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run vllm-project/vllm test
+    exclude_chains: []
+  - name: ensure-csrc-cache / Build csrc cache (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: e2e-upstream_singlecard
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: e2e-upstream_online
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: e2e-upstream_online (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Check npu and CANN info
+    - Install packages
+    - Install system dependencies
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for A2 upstream tests
+    - Run vllm-project/vllm test
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run vllm-project/vllm test
+    exclude_chains: []
+  - name: e2e-upstream_singlecard (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Check npu and CANN info
+    - Install packages
+    - Install system dependencies
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for A2 upstream tests
+    - Run vllm-project/vllm test
+    - Post Checkout vllm-project/vllm repo
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run vllm-project/vllm test
+    exclude_chains: []
+- name: Image Build and Push
+  exclude_jobs: []
+  jobs:
+  - name: setup-matrix
+    steps:
+    - Set up job
+    - Build image matrix
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: 310P Ubuntu / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: A2 Ubuntu / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: 310P openEuler / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: A5 Ubuntu / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: A3 Ubuntu / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: A5 UBX openEuler / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: A5 UBX Ubuntu / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: A5 openEuler / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: A2 openeuler / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: A3 openEuler / build (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    exclude: []
+    exclude_chains: []
+  - name: 310P openEuler / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: A2 Ubuntu / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: 310P Ubuntu / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: A2 openeuler / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: A3 Ubuntu / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: A3 openEuler / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: A5 openEuler / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: A5 Ubuntu / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: A5 UBX Ubuntu / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: A5 UBX openEuler / merge-image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: collect-build-info
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Image build lint
+  exclude_jobs: []
+  jobs:
+  - name: vllm-ascend lint image build
+    steps:
+    - Set up job
+    - Run actions/checkout@v7
+    - Print
+    - Docker meta
+    - Read verified vLLM commit
+    - Build - Set up QEMU
+    - Build - Set up Docker Buildx
+    - Publish - Login to Quay Container Registry
+    - Build and push
+    - Post Build and push
+    - Post Publish - Login to Quay Container Registry
+    - Post Build - Set up Docker Buildx
+    - Post Build - Set up QEMU
+    - Post Run actions/checkout@v7
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Main2Main
+  exclude_jobs: []
+  jobs:
+  - name: resolve-source
+    steps:
+    - Set up job
+    - Checkout vllm-project/vllm-ascend repo
+    - Checkout vllm-project/vllm repo
+    - Resolve fixed vllm-ascend source
+    - Post Checkout vllm-project/vllm repo
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache / Prepare csrc cache checks
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install csrc cache dependencies
+    - Checkout source
+    - Checkout cache workflow helpers
+    - Rebase on  snapshot
+    - Calculate csrc hash
+    - Resolve requested cache targets
+    - Detect OBS writer credentials
+    - Look up csrc cache (a2-arm64-ubuntu)
+    - Look up csrc cache (a3-arm64-ubuntu)
+    - Look up csrc cache (310p-arm64-ubuntu)
+    - Look up csrc cache (a5-arm64-ubuntu)
+    - Summarize csrc cache results
+    - Post Checkout cache workflow helpers
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    - Rebase on main snapshot
+    exclude: []
+    exclude_chains: []
+  - name: main2main
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Checkout vllm-project/vllm repo
+    - Install dependencies
+    - Prepare ascend workspace
+    - Load main2main test cases
+    - Check npu and CANN info
+    - Install opencode + main2main-flow
+    - Create working branch
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Install Mooncake runtime dependencies
+    - Install vllm-project/vllm from source
+    - Check layout and stage actions
+    - Restore incremental cache for Main2Main fallback
+    - Install vllm-project/vllm-ascend
+    - Install FLA NPU wheel
+    - Save vllm-ascend csrc cache
+    - Run main2main flow
+    - Upload workspace
+    - Summarize final status
+    - Post Checkout vllm-project/vllm repo
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    - Install Mooncake wheel
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache / Build csrc cache (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Nightly Image Build (with base)
+  exclude_jobs: []
+  jobs:
+  - name: setup-matrix
+    steps:
+    - Set up job
+    - Filter build matrix by chips
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-a5 (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Login to SWR
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    - Download arm64 digests
+    - Download amd64 digests
+    - Prepare suffix
+    - Docker meta
+    - Merge and push multi-arch image
+    - Dispatch quay.io sync
+    - Download source commits for build information
+    - Restore source commits from previous complete attempt
+    - Merge restored source commits
+    - Collect published image information
+    - Upload published image information
+    - Run if [ "full" = "full" ]; then
+    - 'Run # Full builds are published under the stable tag plus a unique history'
+    - Build nightly-a5 image
+    - Log image push status
+    - Create multi-arch manifest
+    - Dispatch cn-north-4 sync
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-a2 (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Login to SWR
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    - Download arm64 digests
+    - Download amd64 digests
+    - Prepare suffix
+    - Docker meta
+    - Merge and push multi-arch image
+    - Dispatch quay.io sync
+    - Download source commits for build information
+    - Restore source commits from previous complete attempt
+    - Merge restored source commits
+    - Collect published image information
+    - Upload published image information
+    - Run if [ "full" = "full" ]; then
+    - 'Run # Full builds are published under the stable tag plus a unique history'
+    - Build nightly-a2 image
+    - Log image push status
+    - Create multi-arch manifest
+    - Dispatch cn-north-4 sync
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-a3 (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Login to SWR
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    - Download arm64 digests
+    - Download amd64 digests
+    - Prepare suffix
+    - Docker meta
+    - Merge and push multi-arch image
+    - Dispatch quay.io sync
+    - Download source commits for build information
+    - Restore source commits from previous complete attempt
+    - Merge restored source commits
+    - Collect published image information
+    - Upload published image information
+    - Run if [ "full" = "full" ]; then
+    - 'Run # Full builds are published under the stable tag plus a unique history'
+    - Build nightly-a3 image
+    - Log image push status
+    - Create multi-arch manifest
+    - Dispatch cn-north-4 sync
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-a5-ubx (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Login to SWR
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Download arm64 digests
+    - Download amd64 digests
+    - Prepare suffix
+    - Docker meta
+    - Merge and push multi-arch image
+    - Dispatch quay.io sync
+    - Run if [ "full" = "full" ]; then
+    - 'Run # Full builds are published under the stable tag plus a unique history'
+    - Build nightly-a5-ubx image
+    - Log image push status
+    - Create multi-arch manifest
+    - Dispatch cn-north-4 sync
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-310p (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install zstd
+    - Run actions/checkout@v7
+    - Compute cache tag
+    - Get Dockerfile base image tag
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Login to SWR
+    - Prepare tag pattern
+    - Build and push
+    - Tag digest to prevent GC
+    - Export digest
+    - Upload digest
+    - Post Build and push
+    - Post Login to SWR
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    - Record source commit
+    - Upload source commit
+    - Download arm64 digests
+    - Download amd64 digests
+    - Prepare suffix
+    - Docker meta
+    - Merge and push multi-arch image
+    - Dispatch quay.io sync
+    - Download source commits for build information
+    - Restore source commits from previous complete attempt
+    - Merge restored source commits
+    - Collect published image information
+    - Upload published image information
+    - Run if [ "full" = "full" ]; then
+    - 'Run # Full builds are published under the stable tag plus a unique history'
+    - Build nightly-310p image
+    - Log image push status
+    - Create multi-arch manifest
+    - Dispatch cn-north-4 sync
+    exclude: []
+    exclude_chains: []
+  - name: collect-build-info / collect
+    steps:
+    - Set up job
+    - Initialize containers
+    - Run actions/checkout@v7
+    - Download previous complete report bundle
+    - Download published image reports
+    - Download source commits
+    - Restore reports from previous complete attempts
+    - Restore source commits from previous complete attempts
+    - Assemble run information
+    - Bundle run information
+    - Upload run information
+    - Remove superseded build information artifacts
+    - Post Run actions/checkout@v7
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Nightly-310P
+  exclude_jobs: []
+  jobs:
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-310p image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Run {
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Read 310P test matrix config
+    - Post Setup Python
+    - Post Checkout repository
+    - Complete job
+    - Cancel PR nightly runs before scheduled test
+    - Checkout profiling tools
+    - Normalize profiling options
+    - Post Checkout profiling tools
+    exclude: []
+    exclude_chains: []
+  - name: single-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - uninstall vlm vllm-ascend and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Restore incremental cache for source checkout
+    - Move code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Uninstall Triton for 310P tests
+    - Install aisbench
+    - Show vLLM and vLLM-Ascend version
+    - Install clang
+    - Validate Inputs
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    - Update good_table.csv on success
+    - Capture test result
+    - Classify failure
+    - Skip - env issue
+    - Check commit age
+    - Skip - old commit
+    - Process - recent real failure
+    - On success
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Stop containers
+    - Complete job
+    - Install vllm from ref
+    - Check layout and stage actions
+    - Configure profiling
+    - Initialize profiling job
+    - Clear Ascend logs before tests
+    - Collect Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Upload AISBench outputs
+    - Collect requested path
+    - Upload requested path
+    exclude:
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    exclude_chains: []
+  - name: Merge benchmark artifacts into nightly-310p.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Parse single-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Nightly-A2
+  exclude_jobs: []
+  jobs:
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-a2 image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Generate accuracy test matrix
+    steps:
+    - Set up job
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Read accuracy group config
+    - Post Setup Python
+    - Post Checkout repository
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Run {
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Read A2 test matrix config
+    - Post Setup Python
+    - Post Checkout repository
+    - Complete job
+    - Cancel PR nightly runs before scheduled test
+    - Checkout profiling tools
+    - Normalize profiling options
+    - Post Checkout profiling tools
+    exclude: []
+    exclude_chains: []
+  - name: multi-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Decode kubeconfig
+    - Checkout code
+    - Set job variables
+    - Prepare scripts
+    - Clear resources
+    - Launch cluster
+    - Wait for pods ready
+    - Stream logs
+    - Update good_table.csv on success
+    - Fetch benchmark results from PVC
+    - Post process
+    - Collect Ascend logs
+    - Upload Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Post Checkout code
+    - Stop containers
+    - Complete job
+    - Configure profiling
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Collect requested paths from test pods
+    - Upload requested paths
+    - Remove uploaded archives from shared storage
+    - Upload AISBench outputs
+    exclude: []
+    exclude_chains: []
+  - name: Remove node taints
+    steps:
+    - Set up job
+    - Initialize containers
+    - Decode kubeconfig
+    - Remove dedicated taint from test nodes
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: clear-pre-logs
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: single-node-accuracy-tests (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - Uninstall vllm and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Restore incremental cache for source checkout
+    - Move vllm-ascend code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Install tensorflow (for Molmo-7B-D-0924)
+    - Get vLLM commit hash and URL
+    - Get vLLM-Ascend commit hash and URL
+    - Collect version info
+    - Compute effective model list
+    - Run vllm-project/vllm-ascend accuracy test
+    - Generate step summary
+    - Set artifact timestamp
+    - Upload Report
+    - Upload Report (GitHub Artifacts)
+    - Stop containers
+    - Complete job
+    - Install vllm from ref
+    - Check layout and stage actions
+    - Collect requested path
+    - Upload requested path
+    exclude:
+    - Run vllm-project/vllm-ascend accuracy test
+    exclude_chains: []
+  - name: single-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - uninstall vlm vllm-ascend and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Restore incremental cache for source checkout
+    - Move code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Uninstall Triton for 310P tests
+    - Install aisbench
+    - Show vLLM and vLLM-Ascend version
+    - Install clang
+    - Validate Inputs
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    - Update good_table.csv on success
+    - Capture test result
+    - Classify failure
+    - Skip - env issue
+    - Check commit age
+    - Skip - old commit
+    - Process - recent real failure
+    - On success
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Stop containers
+    - Complete job
+    - Install vllm from ref
+    - Check layout and stage actions
+    - Configure profiling
+    - Initialize profiling job
+    - Clear Ascend logs before tests
+    - Collect Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Upload AISBench outputs
+    - Collect requested path
+    - Upload requested path
+    exclude:
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    exclude_chains: []
+  - name: single-node-accuracy-tests-pr-only
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Merge benchmark artifacts into nightly-a2.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Parse single-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Parse multi-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Nightly-A3
+  exclude_jobs: []
+  jobs:
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-a3 image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Cancel PR nightly runs before scheduled test
+    - Run {
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Checkout profiling tools
+    - Normalize profiling options
+    - Read A3 test matrix config
+    - Post Checkout profiling tools
+    - Post Setup Python
+    - Post Checkout PR code
+    - Post Checkout repository
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: single-node
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: double-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Decode kubeconfig
+    - Checkout code
+    - Configure profiling
+    - Set job variables
+    - Prepare scripts
+    - Launch cluster
+    - Wait for pods ready
+    - Stream logs
+    - Update good_table.csv on success
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Fetch benchmark results from PVC
+    - Post process
+    - Collect requested paths from test pods
+    - Upload requested paths
+    - Remove uploaded archives from shared storage
+    - Collect Ascend logs
+    - Upload Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Post Checkout code
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Parse single-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Parse multi-card profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: multi-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Decode kubeconfig
+    - Checkout code
+    - Configure profiling
+    - Set job variables
+    - Prepare scripts
+    - Launch cluster
+    - Wait for pods ready
+    - Stream logs
+    - Update good_table.csv on success
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Fetch benchmark results from PVC
+    - Post process
+    - Collect requested paths from test pods
+    - Upload requested paths
+    - Remove uploaded archives from shared storage
+    - Collect Ascend logs
+    - Upload Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Post Checkout code
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Parse multi-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Merge benchmark artifacts into nightly-a3.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: clear-pre-logs
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Parse double-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Nightly-A3-560T
+  exclude_jobs: []
+  jobs:
+  - name: Build nightly-a3 image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Run input_branch="releases/v0.30.0"
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Read A3 560T test matrix config
+    - Post Setup Python
+    - Post Checkout repository
+    - Complete job
+    - Cancel PR nightly runs before scheduled test
+    - Run input_branch="main"
+    - Checkout profiling tools
+    - Normalize profiling options
+    - Post Checkout profiling tools
+    - Post Checkout PR code
+    exclude: []
+    exclude_chains: []
+  - name: single-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - uninstall vlm vllm-ascend and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Restore incremental cache for source checkout
+    - Move code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Install aisbench
+    - Show vLLM and vLLM-Ascend version
+    - Install clang
+    - Validate Inputs
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    - Update good_table.csv on success
+    - Capture test result
+    - Classify failure
+    - Skip - env issue
+    - Check commit age
+    - Skip - old commit
+    - Process - recent real failure
+    - On success
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Stop containers
+    - Complete job
+    - Install vllm from ref
+    - Check layout and stage actions
+    - Configure profiling
+    - Initialize profiling job
+    - Clear Ascend logs before tests
+    - Collect Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Upload AISBench outputs
+    - Collect requested path
+    - Upload requested path
+    - Post Checkout vllm-project/vllm-ascend repo
+    exclude:
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    exclude_chains: []
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Merge benchmark artifacts into nightly-a3-560t.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Parse single-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Parse multi-card profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Nightly-A5
+  exclude_jobs: []
+  jobs:
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build nightly-a5 image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Cancel PR nightly runs before scheduled test
+    - Run {
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Checkout profiling tools
+    - Normalize profiling options
+    - Read A5 test matrix config
+    - Post Checkout profiling tools
+    - Post Setup Python
+    - Post Checkout PR code
+    - Post Checkout repository
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: single-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - Install vllm from ref
+    - uninstall vlm vllm-ascend and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Check layout and stage actions
+    - Restore incremental cache for source checkout
+    - Move code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Uninstall Triton for 310P tests
+    - Install aisbench
+    - Show vLLM and vLLM-Ascend version
+    - Install clang
+    - Validate Inputs
+    - Configure profiling
+    - Initialize profiling job
+    - Clear Ascend logs before tests
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    - Collect Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Update good_table.csv on success
+    - Capture test result
+    - Classify failure
+    - Skip - env issue
+    - Check commit age
+    - Skip - old commit
+    - Process - recent real failure
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - On success
+    - Set benchmark artifact timestamp
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Collect requested path
+    - Upload requested path
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    exclude_chains: []
+  - name: multi-node (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: clear-pre-logs
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Parse multi-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Merge benchmark artifacts into nightly-a5.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Parse single-node profiles
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: multi-node
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Release Code and Wheel
+  exclude_jobs: []
+  jobs:
+  - name: release code (*
+    steps:
+    - Set up job
+    - checkout vllm-ascend
+    - 'checkout vllm-ascend '
+    - Print
+    - Set up Python 3.12
+    - Install dependencies
+    - Generate tar.gz
+    - Archive tar.gz
+    - Release
+    - Post Set up Python 3.12
+    - Post checkout vllm-ascend
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: build and release wheel (*
+    steps:
+    - Set up job
+    - checkout vllm-ascend
+    - 'checkout vllm-ascend '
+    - Free up disk space
+    - Build wheel
+    - Set up Python 3.12
+    - Repair wheels with auditwheel
+    - Verify automatic platform tags
+    - Generate variant wheels
+    - Archive wheel
+    - Post Set up Python 3.12
+    - Post checkout vllm-ascend
+    - Complete job
+    - Set up Python 3.10
+    - Release
+    - Post Set up Python 3.10
+    - Set up Python 3.11
+    - Post Set up Python 3.11
+    exclude: []
+    exclude_chains: []
+  - name: generate and upload variant index
+    steps:
+    - Set up job
+    - Download all variant wheels
+    - Collect variant wheels
+    - Set up Python
+    - Generate combined variant index
+    - Upload wheels and variant index to OBS
+    - Post Set up Python
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Close stale resolved/wait-feedback issues
+  exclude_jobs: []
+  jobs:
+  - name: stale
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: remove-wait-feedback-on-comment
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Schedule Test Coverage
+  exclude_jobs: []
+  jobs:
+  - name: select-full-tests
+    steps:
+    - Set up job
+    - Initialize containers
+    - Checkout vllm-project/vllm-ascend repo
+    - Resolve refs
+    - Select all tests
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    - Checkout coverage helper from main
+    - Resolve refs and select tests
+    - Post Checkout coverage helper from main
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache / Prepare csrc cache checks
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install csrc cache dependencies
+    - Checkout source
+    - Checkout cache workflow helpers
+    - Rebase on main snapshot
+    - Calculate csrc hash
+    - Resolve requested cache targets
+    - Detect OBS writer credentials
+    - Look up csrc cache (a2-arm64-ubuntu)
+    - Look up csrc cache (a3-arm64-ubuntu)
+    - Look up csrc cache (310p-arm64-ubuntu)
+    - Look up csrc cache (a5-arm64-ubuntu)
+    - Summarize csrc cache results
+    - Post Checkout cache workflow helpers
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: run-full-tests (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check NPU availability
+    - Install packages
+    - Checkout vllm-project/vllm repo
+    - Install vllm-project/vllm from source
+    - Checkout vllm-project/vllm-ascend repo
+    - Rebase on main snapshot
+    - Get csrc hash
+    - Get architecture
+    - Restore vllm-ascend csrc cache
+    - Restore incremental cache
+    - Install Mooncake wheel
+    - Install vllm-project/vllm-ascend with device
+    - Install FLA NPU for selected tests
+    - Verify required AscendC custom ops are registered
+    - Install vllm-project/vllm-ascend no device
+    - Uninstall Triton for 310P tests
+    - Run selected tests with device
+    - Run selected tests without device
+    - Upload timing data
+    - Upload coverage data
+    - Upload selected test logs
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Post Checkout vllm-project/vllm repo
+    - Stop containers
+    - Complete job
+    - Checkout vllm-ascend source code
+    - Download all coverage artifacts
+    - Check full coverage data completeness
+    - Download previous coverage data from OBS
+    - Backfill missing coverage data
+    - Debug - List downloaded coverage files
+    - Assemble and compress coverage files
+    - Upload coverage to OBS
+    - Prune extra tests already present in coverage
+    - Upload pruned extra_recommended_tests.yaml to OBS
+    - Post Checkout vllm-ascend source code
+    - Rebase on releases/v0.31.0rc snapshot
+    - Check layout and stage actions
+    - Install Mooncake runtime dependencies
+    - Prepare coverage object names
+    - Record current release coverage branch
+    exclude:
+    - Run selected tests with device
+    - Run selected tests without device
+    exclude_chains: []
+  - name: ensure-csrc-cache / Build csrc cache (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: ensure-csrc-cache (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Install csrc cache dependencies
+    - Checkout source
+    - Checkout cache workflow helpers
+    - Rebase on releases/v0.31.0rc snapshot
+    - Calculate csrc hash
+    - Resolve requested cache targets
+    - Detect OBS writer credentials
+    - Look up csrc cache (a2-arm64-ubuntu)
+    - Look up csrc cache (a3-arm64-ubuntu)
+    - Look up csrc cache (310p-arm64-ubuntu)
+    - Look up csrc cache (a5-arm64-ubuntu)
+    - Summarize csrc cache results
+    - Post Checkout cache workflow helpers
+    - Post Checkout source
+    - Stop containers
+    - Complete job
+    - Rebase on main snapshot
+    - Install packages (ubuntu)
+    - Install packages (openeuler)
+    - Update submodules
+    - Install system dependencies (ubuntu)
+    - Install system dependencies (openeuler)
+    - Check layout and stage actions
+    - Restore incremental build cache
+    - Install vllm-ascend
+    - Verify csrc artifacts
+    - Save incremental build cache
+    - Save csrc cache
+    exclude: []
+    exclude_chains: []
+- name: Weekly-310P
+  exclude_jobs: []
+  jobs:
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build weekly-310p image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Cancel PR weekly runs before scheduled test
+    - Run {
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Read 310P weekly test matrix config
+    - Post Setup Python
+    - Post Checkout repository
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: single-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - Install vllm from ref
+    - uninstall vlm vllm-ascend and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Check layout and stage actions
+    - Restore incremental cache for source checkout
+    - Move code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Uninstall Triton for 310P tests
+    - Install aisbench
+    - Show vLLM and vLLM-Ascend version
+    - Install clang
+    - Validate Inputs
+    - Configure profiling
+    - Initialize profiling job
+    - Clear Ascend logs before tests
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    - Collect Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Update good_table.csv on success
+    - Capture test result
+    - Classify failure
+    - Skip - env issue
+    - Check commit age
+    - Skip - old commit
+    - Process - recent real failure
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - On success
+    - Set benchmark artifact timestamp
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Collect requested path
+    - Upload requested path
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    exclude_chains: []
+  - name: Merge benchmark artifacts into weekly-310p.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Weekly-A2
+  exclude_jobs: []
+  jobs:
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build weekly-a2 image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Run {
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Read A2 weekly test matrix config
+    - Post Setup Python
+    - Post Checkout repository
+    - Complete job
+    - Cancel PR weekly runs before scheduled test
+    exclude: []
+    exclude_chains: []
+  - name: Merge benchmark artifacts into weekly-a2.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: clear-pre-logs
+    steps:
+    - Set up job
+    - Clear pre-logs on pvc
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: single-node-accuracy-tests (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - Uninstall vllm and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Move vllm-ascend code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Install tensorflow (for Molmo-7B-D-0924)
+    - Get vLLM commit hash and URL
+    - Get vLLM-Ascend commit hash and URL
+    - Collect version info
+    - Compute effective model list
+    - Run vllm-project/vllm-ascend accuracy test
+    - Generate step summary
+    - Set artifact timestamp
+    - Upload Report
+    - Upload Report (GitHub Artifacts)
+    - Stop containers
+    - Complete job
+    - Install vllm from ref
+    - Check layout and stage actions
+    - Restore incremental cache for source checkout
+    - Collect requested path
+    - Upload requested path
+    exclude:
+    - Run vllm-project/vllm-ascend accuracy test
+    exclude_chains: []
+  - name: single-node-accuracy-tests-pr-only
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Weekly-A3
+  exclude_jobs: []
+  jobs:
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build weekly-a3 image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Cancel PR weekly runs before scheduled test
+    - Run {
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Read A3 weekly test matrix config
+    - Post Setup Python
+    - Post Checkout PR code
+    - Post Checkout repository
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: multi-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Decode kubeconfig
+    - Checkout code
+    - Configure profiling
+    - Set job variables
+    - Prepare scripts
+    - Launch cluster
+    - Wait for pods ready
+    - Stream logs
+    - Update good_table.csv on success
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - Fetch benchmark results from PVC
+    - Post process
+    - Collect requested paths from test pods
+    - Upload requested paths
+    - Remove uploaded archives from shared storage
+    - Collect Ascend logs
+    - Upload Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Set benchmark artifact timestamp
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Post Checkout code
+    - Stop containers
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: single-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - Install vllm from ref
+    - uninstall vlm vllm-ascend and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Check layout and stage actions
+    - Restore incremental cache for source checkout
+    - Move code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Uninstall Triton for 310P tests
+    - Install aisbench
+    - Show vLLM and vLLM-Ascend version
+    - Install clang
+    - Validate Inputs
+    - Configure profiling
+    - Initialize profiling job
+    - Clear Ascend logs before tests
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    - Collect Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    - Update good_table.csv on success
+    - Capture test result
+    - Classify failure
+    - Skip - env issue
+    - Check commit age
+    - Skip - old commit
+    - Process - recent real failure
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - On success
+    - Set benchmark artifact timestamp
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Collect requested path
+    - Upload requested path
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    exclude:
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    exclude_chains: []
+  - name: double-node (*
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Merge benchmark artifacts into weekly-a3.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: clear-pre-logs
+    steps: []
+    exclude: []
+    exclude_chains: []
+- name: Weekly-A3-560T
+  exclude_jobs: []
+  jobs:
+  - name: Parse trigger and determine test scope
+    steps:
+    - Set up job
+    - Parse trigger
+    - Complete job
+    exclude: []
+    exclude_chains: []
+  - name: Build weekly-a3 image
+    steps: []
+    exclude: []
+    exclude_chains: []
+  - name: Export global env vars as job outputs
+    steps:
+    - Set up job
+    - Run input_branch="main"
+    - Checkout repository
+    - Checkout PR code
+    - Setup Python
+    - Read A3 560T test matrix config
+    - Post Setup Python
+    - Post Checkout PR code
+    - Post Checkout repository
+    - Complete job
+    - Cancel PR weekly runs before scheduled test
+    exclude: []
+    exclude_chains: []
+  - name: single-node (*
+    steps:
+    - Set up job
+    - Initialize containers
+    - Check npu and CANN info
+    - Install vllm from ref
+    - uninstall vlm vllm-ascend and remove code (if pr test)
+    - Checkout vllm-project/vllm-ascend repo
+    - Check layout and stage actions
+    - Restore incremental cache for source checkout
+    - Move code to /vllm-workspace
+    - Set MAX_JOBS based on runner
+    - Install vllm-project/vllm-ascend
+    - Install aisbench
+    - Show vLLM and vLLM-Ascend version
+    - Install clang
+    - Validate Inputs
+    - Configure profiling
+    - Initialize profiling job
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    - Update good_table.csv on success
+    - Capture test result
+    - Classify failure
+    - Skip - env issue
+    - Check commit age
+    - Skip - old commit
+    - Process - recent real failure
+    - Collect AOP bisect diagnostics
+    - Upload AOP bisect diagnostics (GitHub Artifacts)
+    - On success
+    - Set benchmark artifact timestamp
+    - Publish profiling data
+    - Upload profiling index
+    - Profiling summary
+    - Upload benchmark results
+    - Upload benchmark results (GitHub Artifacts)
+    - Upload AISBench outputs
+    - Collect requested path
+    - Upload requested path
+    - Post Checkout vllm-project/vllm-ascend repo
+    - Stop containers
+    - Complete job
+    - Clear Ascend logs before tests
+    - Collect Ascend logs
+    - Upload Ascend logs (GitHub Artifacts)
+    exclude:
+    - Run Pytest (py-driven)
+    - Run Pytest (YAML-driven)
+    exclude_chains: []
+  - name: Merge benchmark artifacts into weekly-a3-560t.zip
+    steps:
+    - Set up job
+    - Merge all benchmark result artifacts
+    - Complete job
+    exclude: []
+    exclude_chains: []
+- name: Slash Command Dispatch
+  exclude_jobs: []
+  jobs:
+  - name: slashCommandDispatch
+    steps:
+    - Set up job
+    - Slash Command Dispatch
+    - Complete job
+    exclude: []
+    exclude_chains: []

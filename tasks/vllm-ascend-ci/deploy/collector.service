@@ -1,0 +1,11 @@
+[Unit]
+Description=Collect vLLM Ascend CI failures
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/data-collect-proc/source
+ExecStart=/opt/data-collect-proc/source/tasks/vllm-ascend-ci/deploy/run.sh
+TimeoutStartSec=50min
