@@ -1,0 +1,10 @@
+[Unit]
+Description=Check monitored files every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+Unit=ascend-changes-collector.service
+
+[Install]
+WantedBy=timers.target

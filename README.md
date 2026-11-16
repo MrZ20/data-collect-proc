@@ -1,6 +1,6 @@
 # 数据采集与处理
 
-每个任务单独维护依赖、Dockerfile、部署配置和本地状态。当前只有 `tasks/vllm-ascend-ci`，用于把 GitHub Actions 运行时的失败 job 初筛后交给 agent 分析。
+每个任务单独维护依赖、Dockerfile、部署配置和本地状态。`tasks/vllm-ascend-ci` 初筛 GitHub Actions 失败 job；`tasks/vllm-ascend-changes` 每 15 分钟检查配置的文件路径并立即上传结果，详见[任务说明](tasks/vllm-ascend-changes/README.md)。
 
 镜像手动构建。本仓库没有 GitHub Actions 工作流。`zsl-arm64` 已启用 systemd timer，每小时启动一次容器，采集并上传数据。
 

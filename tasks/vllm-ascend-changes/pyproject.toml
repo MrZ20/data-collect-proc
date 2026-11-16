@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools==80.9.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ascend-changes-collector"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = ["PyYAML==6.0.3", "requests==2.32.5"]
+
+[project.optional-dependencies]
+test = ["pytest==9.0.2"]
+
+[project.scripts]
+ascend-changes = "ascend_changes.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

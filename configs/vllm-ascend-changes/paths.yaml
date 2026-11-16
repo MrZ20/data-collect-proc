@@ -1,0 +1,5 @@
+repository: vllm-project/vllm-ascend
+branch: main
+paths:
+  - .github/workflows/*.yaml
+  - .github/workflows/*.yml
