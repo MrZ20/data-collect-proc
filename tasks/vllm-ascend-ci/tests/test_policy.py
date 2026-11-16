@@ -79,6 +79,22 @@ def test_repeat_observes_only_actual_relevant_steps():
     assert result.remaining_steps == ["test"]
 
 
+def test_repeat_exclude_only_disables_reentry_not_normal_failure_capture():
+    p = Policy.from_dict({"repository": "org/repo", "workflows": [{"name": "CI", "jobs": [
+        {"name": "test*", "exclude": ["approval*", "flaky"],
+         "repeat_exclude": ["approval*"]},
+    ]}]})
+    result = p.evaluate("CI", job((1, "approval check", "failure"), (2, "flaky", "failure"),
+                                  (3, "Set up job", "failure")))
+    assert result.remaining_steps == ["Set up job"]
+    assert result.repeat_steps == ["flaky"]
+    assert result.repeat_observations == {"flaky": "failure"}
+    unexcluded = Policy.from_dict({"repository": "org/repo", "workflows": [{"name": "CI", "jobs": [
+        {"name": "test*", "repeat_exclude": ["approval*"]},
+    ]}]})
+    assert unexcluded.evaluate("CI", job((1, "approval check", "failure"))).remaining_steps == ["approval check"]
+
+
 def test_load_yaml_and_validation(tmp_path):
     path = tmp_path / "policy.yaml"
     path.write_text("repository: org/repo\nworkflows: []\n", encoding="utf-8")

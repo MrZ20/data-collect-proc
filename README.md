@@ -22,7 +22,7 @@
 - `exclude_chains` 是同一次 job 执行中按顺序全部失败的步骤链。中间可有其他步骤，但链中的成功或跳过不算失败。先从原始失败集合匹配，再执行排除；链外失败仍进入候选。
 - job 名和普通 step 排除支持 `*` 通配符，也优先匹配完整字面名称；链内 step 使用精确名称。
 - 已登记 workflow 内未登记的 job/step 默认纳入。没有失败 step 时不凭 job 结论生成候选；失败 job 缺步骤会补读一次，仍为空则记录警告，不补造步骤。
-- 普通排除步骤和链首步骤连续失败达到 `repeat_threshold` 后重新进入候选；链后续步骤不单独触发。成功打断连续失败，跳过不计数，同一个 run 的重跑不增加独立样本数（采用首次观察到的有效结果）。整 job 排除不会被重新纳入。
+- 普通排除步骤和链首步骤连续失败达到 `repeat_threshold` 后重新进入候选；链后续步骤不单独触发。`repeat_exclude` 可以为具体 job 配置不参加连续失败统计的步骤白名单；要同时排除单次失败，仍须将该步骤写入 `exclude`。成功打断连续失败，跳过不计数，同一个 run 的重跑不增加独立样本数（采用首次观察到的有效结果）。整 job 排除不会被重新纳入。
 
 ````yaml
 repository: vllm-project/vllm-ascend
@@ -96,7 +96,7 @@ HTTP 连接复用。读取请求对连接错误、超时、临时 5xx 和限流�
 
 ````bash
 docker build -f tasks/vllm-ascend-ci/Dockerfile \
-  -t data-collect-vllm-ascend-ci:0.1.2 .
+  -t data-collect-vllm-ascend-ci:0.1.3 .
 ````
 
 服务器约定目录：
@@ -154,5 +154,5 @@ journalctl -u ascend-ci-collector.service
 - 首次部署曾在 Python 3.12 基础容器内手动创建虚拟环境、安装包、运行测试与真实采集，再将成功流程写入 Dockerfile；此次按 Dockerfile 重新构建验证。
 - 最终镜像真实采集扫描 2181 个 run，仅查询 28 个 run 的 job：共 59 次 API 请求，其中 12 次元数据请求返回 304；处理 130 个新 job，新增并上传 5 条候选，上传队列归零，固定起点保持 `2026-11-16T07:28:40Z`。
 - 服务器旧 SQLite 已备份为 `state-before-0.1.1.sqlite3`，恢复固定首次边界并将 `recheck_days` 改为 2。
-- 上述历史验证使用镜像 `data-collect-vllm-ascend-ci:0.1.1`；迁移到 main 后部署版本为 `0.1.2`，继续使用 `arm64` 和 `10001:10001`。
+- 上述历史验证使用镜像 `data-collect-vllm-ascend-ci:0.1.1`；当前部署版本为 `0.1.3`，继续使用 `arm64` 和 `10001:10001`。
 - 服务器代码、配置、状态和运行时 token 已放置到上述目录；`ascend-ci-collector.timer` 已启用每小时采集上传。token 不在 Git 或镜像中。

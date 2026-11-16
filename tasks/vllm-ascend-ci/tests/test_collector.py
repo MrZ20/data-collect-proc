@@ -120,6 +120,28 @@ def test_repeat_exclusion_reenters_at_threshold_rerun_does_not_inflate_streak(tm
         assert all(record["consecutive_failures"] == 2 for _, record in state.pending())
 
 
+def test_repeat_whitelisted_approval_never_reenters_but_setup_failures_do(tmp_path):
+    policy = Policy.from_dict({"repository": "org/repo", "repeat_threshold": 10, "workflows": [{
+        "name": "E2E", "jobs": [{"name": "codeowner-approval",
+            "exclude": ["CODEOWNERS approval check"],
+            "repeat_exclude": ["CODEOWNERS approval check"]}],
+    }]})
+    runs = [run(i, minute=i) for i in range(1, 13)]
+    jobs = {(i, 1): [job(i, "codeowner-approval", ("CODEOWNERS approval check", "failure"), minute=i)]
+            for i in range(1, 12)}
+    jobs[(12, 1)] = [job(12, "codeowner-approval", ("CODEOWNERS approval check", "failure"),
+                         ("Initialize containers", "failure"), minute=12)]
+    source = Source(runs, jobs)
+    with State(tmp_path / "state.sqlite") as state:
+        state.observe("E2E", "codeowner-approval", "CODEOWNERS approval check", 99,
+                      "failure", "2026-01-02T10:00:00Z")
+        result = collect(source, None, CONFIG, policy, state, now=NOW, upload=False)
+        assert result["candidates_added"] == 1
+        assert state.pending()[0][1]["failed_steps"] == ["CODEOWNERS approval check", "Initialize containers"]
+        assert "consecutive_failures" not in state.pending()[0][1]
+        assert state.streak("E2E", "codeowner-approval", "CODEOWNERS approval check") == 1
+
+
 def test_source_failure_does_not_advance_state(tmp_path):
     source = Source([run(1)], {})
     source.fail = True

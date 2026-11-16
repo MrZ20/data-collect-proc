@@ -23,6 +23,7 @@ class _JobRule:
     name: str
     steps: tuple[str, ...]
     exclude: tuple[str, ...]
+    repeat_exclude: tuple[str, ...]
     chains: tuple[tuple[str, ...], ...]
 
 
@@ -89,6 +90,7 @@ class Policy:
                 job_name = _name(job.get("name"), "job name")
                 steps = _names(job.get("steps", []), "steps")
                 exclude = _names(job.get("exclude", []), "exclude")
+                repeat_exclude = _names(job.get("repeat_exclude", []), "repeat_exclude")
                 chain_data = job.get("exclude_chains", [])
                 if not isinstance(chain_data, list):
                     raise ValueError("exclude_chains must be a list")
@@ -103,7 +105,7 @@ class Policy:
                     if len(chain_steps) < 2:
                         raise ValueError("a chain must contain at least two steps")
                     chains.append(chain_steps)
-                jobs.append(_JobRule(job_name, steps, exclude, tuple(chains)))
+                jobs.append(_JobRule(job_name, steps, exclude, repeat_exclude, tuple(chains)))
             workflows.append(_Workflow(name, workflow_file, exclude_jobs, tuple(jobs)))
         return cls(repository, threshold, tuple(workflows))
 
@@ -135,6 +137,7 @@ class Policy:
 
         rules = [rule for wf in workflows for rule in wf.jobs if _matches(job_name, rule.name)]
         exclude = [pattern for rule in rules for pattern in rule.exclude]
+        repeat_exclude = [pattern for rule in rules for pattern in rule.repeat_exclude]
         chains = [chain for rule in rules for chain in rule.chains]
         first_names = {chain[0] for chain in chains}
         downstream_names = {name for chain in chains for name in chain[1:]} - first_names
@@ -142,7 +145,7 @@ class Policy:
         failures = [step for step in steps if step.get("conclusion") in ("failure", "timed_out")]
 
         def repeatable(name: str) -> bool:
-            return name not in downstream_names and (
+            return not any(_matches(name, pattern) for pattern in repeat_exclude) and name not in downstream_names and (
                 name in first_names or any(_matches(name, pattern) for pattern in exclude)
             )
 

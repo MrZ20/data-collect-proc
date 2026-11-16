@@ -653,6 +653,8 @@ workflows:
     - Complete job
     exclude:
     - CODEOWNERS approval check
+    repeat_exclude:
+    - CODEOWNERS approval check
     exclude_chains: []
   - name: prepare-csrc-cache / Prepare csrc cache checks
     steps:
