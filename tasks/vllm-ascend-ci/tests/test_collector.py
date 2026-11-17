@@ -314,3 +314,25 @@ def test_completed_run_with_incomplete_job_is_rechecked(tmp_path):
         result = collect(source, None, CONFIG, rules(), state, now=NOW + timedelta(hours=1), upload=False)
         assert result['candidates_added'] == 1
         assert state.pending_run_ids() == []
+
+
+def test_cancelled_job_ignored_but_failure_in_cancelled_run_is_kept(tmp_path):
+    cancelled = job(1, 'test [gpu]', ('flaky [gpu]', 'failure'))
+    cancelled['conclusion'] = 'cancelled'
+    failed = job(2, 'test [gpu]', ('new step', 'failure'))
+    source = Source([dict(run(1), conclusion='cancelled')], {(1, 1): [cancelled, failed]})
+    with State(tmp_path / 'state.sqlite') as state:
+        result = collect(source, None, CONFIG, rules(), state, now=NOW, upload=False)
+        assert result['candidates_added'] == 1
+        assert state.pending()[0][1]['job_conclusion'] == 'failure'
+        assert state.streak('E2E', 'test [gpu]', 'flaky [gpu]') == 0
+
+
+def test_run_completion_updates_existing_group_without_new_job(tmp_path):
+    source = Source([run(1, status='in_progress')], {(1, 1): [job(1, 'test [gpu]', ('new step', 'failure'))]})
+    with State(tmp_path / 'state.sqlite') as state:
+        collect(source, None, CONFIG, rules(), state, now=NOW, upload=False)
+        state.acknowledge_groups(state.pending_groups())
+        source.runs[1] = dict(run(1), conclusion='failure')
+        collect(source, None, CONFIG, rules(), state, now=NOW.replace(hour=13), upload=False)
+        assert state.pending_groups() == [(1, 1, '2026-01-02', 'completed', 'failure')]

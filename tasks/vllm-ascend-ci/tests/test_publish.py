@@ -30,7 +30,7 @@ class Writer:
 
 
 def record(job_id, date="2026-01-02"):
-    return {"time": f"{date}T11:00:00Z", "workflow": "E2E", "job": f"job {job_id}",
+    return {"run_id": 123, "run_attempt": 1, "job_conclusion": "failure", "time": f"{date}T11:00:00Z", "workflow": "E2E", "job": f"job {job_id}",
             "failed_steps": ["build"], "runner": "node", "base_repo": "org/repo",
             "url": f"https://example.com/jobs/{job_id}"}
 
@@ -54,7 +54,7 @@ def test_atomic_daily_files_and_retry_after_ack_loss(tmp_path, monkeypatch):
         assert state.pending() == []
         assert len(writer.commits) == 1
         records = [json.loads(line) for line in writer.files["data/vllm-ascend-ci/2026-01-02.jsonl"].splitlines()]
-        assert {item["url"] for item in records} == {record(1)["url"], record(2)["url"]}
+        assert {job["url"] for item in records for job in item["jobs"]} == {record(1)["url"], record(2)["url"]}
         assert writer.files["reports/vllm-ascend-ci/2026-01-02.md"].count("[Actions]") == 2
 
 
@@ -83,3 +83,18 @@ def test_lost_ref_response_rechecks_remote_before_retry(tmp_path, monkeypatch):
         assert publish(writer, "org/data", "ci", state) == 1
         assert len(writer.commits) == 1
         assert state.pending() == []
+
+
+def test_grouping_attempts_late_jobs_and_status(tmp_path):
+    writer = Writer()
+    with State(tmp_path / 'state.sqlite') as state:
+        state.enqueue(1, record(1))
+        state.enqueue(2, record(2))
+        publish(writer, 'org/data', 'ci', state)
+        state.enqueue(3, dict(record(3), run_attempt=2))
+        state.enqueue(4, record(4))
+        state.update_group(123, 1, '2026-01-02', 'completed', 'failure')
+        publish(writer, 'org/data', 'ci', state)
+        groups = [json.loads(line) for line in writer.files['data/vllm-ascend-ci/2026-01-02.jsonl'].splitlines()]
+        assert [(g['run_attempt'], len(g['jobs'])) for g in groups] == [(1, 3), (2, 1)]
+        assert groups[0]['conclusion'] == 'failure'

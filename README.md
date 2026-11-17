@@ -21,6 +21,7 @@
 - job 内 `exclude` 排除单次失败步骤。
 - `exclude_chains` 是同一次 job 执行中按顺序全部失败的步骤链。中间可有其他步骤，但链中的成功或跳过不算失败。先从原始失败集合匹配，再执行排除；链外失败仍进入候选。
 - job 名和普通 step 排除支持 `*` 通配符，也优先匹配完整字面名称；链内 step 使用精确名称。
+- conclusion 为 cancelled 的 job 不纳入候选，也不参与连续失败统计；run 取消不影响其中 conclusion 为 failure 的 job。
 - 已登记 workflow 内未登记的 job/step 默认纳入。没有失败 step 时不凭 job 结论生成候选；失败 job 缺步骤会补读一次，仍为空则记录警告，不补造步骤。
 - 普通排除步骤和链首步骤连续失败达到 `repeat_threshold` 后重新进入候选；链后续步骤不单独触发。`repeat_exclude` 可以为具体 job 配置不参加连续失败统计的步骤白名单；要同时排除单次失败，仍须将该步骤写入 `exclude`。成功打断连续失败，跳过不计数，同一个 run 的重跑不增加独立样本数（采用首次观察到的有效结果）。整 job 排除不会被重新纳入。
 
@@ -82,7 +83,7 @@ data/vllm-ascend-ci/YYYY-MM-DD.jsonl
 reports/vllm-ascend-ci/YYYY-MM-DD.md
 ````
 
-每条 JSONL 只有 `time`（UTC）、`workflow`、`job`、`failed_steps`、`runner`、`base_repo`、`url`；连续失败重新纳入时加 `consecutive_failures`。`failed_steps` 保留该 job 的全部失败步骤，便于 agent 理解上下文。agent 沿 job 链接自行读取日志等信息。
+每条 JSONL 是一个 `run_id`、`run_attempt` 分组，包含 `workflow`、`base_repo`、`head_sha`、`status`、`conclusion` 和 `jobs`；Job 保留 UTC 完成时间 `time`、名称、结论、失败步骤、runner 和 URL，连续失败时额外记录 `consecutive_failures`。同一运行跨 UTC 日时分别保存在对应日期，分析时合并；后续 Job 增量合并，同 attempt 完成后更新已有分组状态。旧数据中无法确认的运行状态为 null。`failed_steps` 保留全部失败步骤。
 
 SQLite 保存固定采集起点、游标、待完成运行、去重、连续失败记录、压缩的 HTTP 缓存和待上传记录。上传失败不会丢失 outbox。每批 JSONL 与 Markdown 同一次提交，重试按 job URL 去重，不强制覆盖远端分支。没有新增数据则不提交。使用文件锁防止同一状态目录被同时采集。
 
@@ -96,7 +97,7 @@ HTTP 连接复用。读取请求对连接错误、超时、临时 5xx 和限流�
 
 ````bash
 docker build -f tasks/vllm-ascend-ci/Dockerfile \
-  -t data-collect-vllm-ascend-ci:0.1.3 .
+  -t data-collect-vllm-ascend-ci:0.1.4 .
 ````
 
 服务器约定目录：

@@ -155,6 +155,9 @@ def collect(source, writer, config: dict, policy: Policy, state, *, now=None, up
         for run, job in sorted(jobs, key=lambda pair: pair[1].get('completed_at') or pair[0]['updated_at']):
             if state.has_job(job['id']):
                 continue
+            if job.get('conclusion') == 'cancelled':
+                state.mark_job(job['id'])
+                continue
             if not job.get('steps') and job.get('conclusion') in ('failure', 'timed_out'):
                 # A second read can recover a transiently incomplete step list.
                 job = source.get(f'/repos/{repository}/actions/jobs/{job["id"]}')
@@ -168,15 +171,26 @@ def collect(source, writer, config: dict, policy: Policy, state, *, now=None, up
             repeat_count = max((state.streak(run['name'], job['name'], step, at=completed)
                                 for step in result.repeat_steps), default=0)
             if not result.excluded_job and (result.remaining_steps or repeat_count >= policy.repeat_threshold):
-                record = {'time': completed, 'workflow': run['name'], 'job': job['name'],
+                job_attempt = job.get('run_attempt', run['run_attempt'])
+                current_attempt = job_attempt == run['run_attempt']
+                record = {'run_id': run['id'], 'run_attempt': job_attempt,
+                          'head_sha': job.get('head_sha') or (run.get('head_sha') if current_attempt else None),
+                          'run_status': run['status'] if current_attempt else None,
+                          'run_conclusion': run.get('conclusion') if current_attempt else None,
+                          'job_conclusion': job.get('conclusion'),
+                          'time': completed, 'workflow': run['name'], 'job': job['name'],
                           'failed_steps': result.failed_steps, 'runner': job.get('runner_name'),
                           'base_repo': repository, 'url': job['html_url']}
                 if repeat_count >= policy.repeat_threshold:
                     record['consecutive_failures'] = repeat_count
                 state.enqueue(job['id'], record)
+                state.update_group(run['id'], job_attempt, completed[:10],
+                                   record['run_status'], record['run_conclusion'])
                 added += 1
             state.mark_job(job['id'])
         for run in processed_runs:
+            for day in state.group_days(run['id'], run['run_attempt']):
+                state.update_group(run['id'], run['run_attempt'], day, run['status'], run.get('conclusion'))
             state.track_run(run)
         state.set_meta('scanned_until', utc(now))
     state.prune_http_cache(utc(rerun_start))

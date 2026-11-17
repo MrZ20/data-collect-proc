@@ -2,7 +2,7 @@
 set -eu
 
 deploy_dir=${DEPLOY_DIR:-/opt/data-collect-proc}
-image=${IMAGE:-data-collect-vllm-ascend-ci:0.1.3}
+image=${IMAGE:-data-collect-vllm-ascend-ci:0.1.4}
 if [ "$#" -eq 0 ]; then
     set -- collect
 fi

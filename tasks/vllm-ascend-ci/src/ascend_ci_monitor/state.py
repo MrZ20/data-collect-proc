@@ -28,6 +28,11 @@ class State:
                 job_id INTEGER PRIMARY KEY, record TEXT NOT NULL,
                 acknowledged INTEGER NOT NULL DEFAULT 0
             );
+            CREATE TABLE IF NOT EXISTS run_groups (
+                run_id INTEGER NOT NULL, attempt INTEGER NOT NULL, day TEXT NOT NULL,
+                status TEXT, conclusion TEXT, dirty INTEGER NOT NULL DEFAULT 1,
+                PRIMARY KEY (run_id, attempt, day)
+            );
             CREATE TABLE IF NOT EXISTS http_cache (
                 key TEXT PRIMARY KEY, etag TEXT NOT NULL, payload BLOB NOT NULL,
                 window_end TEXT NOT NULL
@@ -141,6 +146,27 @@ class State:
             "INSERT OR IGNORE INTO outbox (job_id, record) VALUES (?, ?)",
             (job_id, json.dumps(record_dict, ensure_ascii=False)),
         )
+
+    def update_group(self, run_id, attempt, day, status, conclusion):
+        self._db.execute(
+            "INSERT INTO run_groups VALUES (?, ?, ?, ?, ?, 1) "
+            "ON CONFLICT(run_id, attempt, day) DO UPDATE SET status=excluded.status, "
+            "conclusion=excluded.conclusion, dirty=CASE WHEN status IS NOT excluded.status "
+            "OR conclusion IS NOT excluded.conclusion THEN 1 ELSE dirty END",
+            (run_id, attempt, day, status, conclusion),
+        )
+
+    def group_days(self, run_id, attempt):
+        return [row[0] for row in self._db.execute(
+            "SELECT day FROM run_groups WHERE run_id=? AND attempt=?", (run_id, attempt))]
+
+    def pending_groups(self):
+        return list(self._db.execute(
+            "SELECT run_id, attempt, day, status, conclusion FROM run_groups WHERE dirty=1"))
+
+    def acknowledge_groups(self, groups):
+        self._db.executemany("UPDATE run_groups SET dirty=0 WHERE run_id=? AND attempt=? AND day=?",
+                             [(r, a, d) for r, a, d, _, _ in groups])
 
     def pending(self) -> list[tuple[int, dict]]:
         return [(job_id, json.loads(record)) for job_id, record in self._db.execute(
