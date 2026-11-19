@@ -1,8 +1,8 @@
 [Unit]
-Description=Check watched pull requests every 15 minutes
+Description=Check watched pull requests every 30 minutes
 
 [Timer]
-OnCalendar=*:04,19,34,49
+OnCalendar=*:04,34
 Persistent=true
 Unit=github-work-watch.service
 

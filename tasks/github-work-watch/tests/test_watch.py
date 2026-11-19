@@ -51,7 +51,9 @@ def test_head_changes_membership_cooldown_and_terminal(monkeypatch, tmp_path):
     assert api.queries[-1] == set()
     assert len(checks) == 1
     api.sha = 'b'
-    assert poll(30)[0]['code_updated_at'] == '2026-11-19T00:30:00Z'
+    result = poll(30)[0]
+    assert result['code_updated_at'] == '2026-11-19T00:30:00Z'
+    assert result['head_sha'] == 'b'
     api.sha = 'c'
     poll(45)
     api.sha = 'd'

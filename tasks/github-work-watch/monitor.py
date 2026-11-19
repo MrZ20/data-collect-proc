@@ -172,7 +172,8 @@ def snapshot(rows):
         if active(row):
             repo, number = item.split('#')
             records.append((int(number), repo, {'pr': f'https://github.com/{repo}/pull/{number}',
-                            'code_updated_at': row['code_updated_at'], 'status': row['status']}))
+                            'code_updated_at': row['code_updated_at'], 'status': row['status'],
+                            'head_sha': row['sha']}))
     return json.dumps([r for _, _, r in sorted(records, key=lambda v: (-v[0], v[1]))],
                       ensure_ascii=False, indent=2) + '\n'
 
