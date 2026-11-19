@@ -2,3 +2,5 @@ users:
   - MrZ20
 paths:
   - .github/
+exclude_paths:
+  - .github/workflows/configs/

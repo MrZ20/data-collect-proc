@@ -14,7 +14,7 @@ SOURCE = 'vllm-project/vllm-ascend'
 DATA = 'MrZ20/data_repo'
 CONFIG = 'configs/github-work-watch/watch.yaml'
 OUTPUT = 'data/github-work-watch/prs.json'
-FIELDS = 'number repository{nameWithOwner} state isDraft headRefOid'
+FIELDS = 'number repository{nameWithOwner} state isDraft headRefOid baseRefName author{login}'
 WITH_DATE = FIELDS + ' commits(last:1){nodes{commit{oid committedDate}}}'
 PAGE = 'pageInfo{hasNextPage endCursor}'
 
@@ -44,6 +44,9 @@ class API:
         if payload.get('errors'):
             raise RuntimeError('; '.join(error['message'] for error in payload['errors']))
         return payload['data']
+
+    def viewer(self):
+        return self.query('viewer{login}')['viewer']['login']
 
     def config(self):
         r = self.request('GET', f'/repos/{DATA}/contents/{CONFIG}', params={'ref': 'main'})
@@ -104,6 +107,21 @@ class API:
                 for node in data[f'r{i}'].values():
                     rows[key(node)] = node
         return rows, personal
+
+    def changed_files(self, repo, number):
+        names = []
+        for page in range(1, 32):
+            r = self.request('GET', f'/repos/{repo}/pulls/{number}/files',
+                             params={'per_page': 100, 'page': page})
+            r.raise_for_status()
+            items = r.json()
+            for item in items:
+                names.append(item['filename'])
+                if item.get('previous_filename'):
+                    names.append(item['previous_filename'])
+            if len(items) < 100:
+                return names
+        raise RuntimeError(f'PR {repo}#{number} has too many changed files')
 
     def commit_date(self, repo, sha):
         r = self.request('GET', f'/repos/{repo}/git/commits/{sha}')

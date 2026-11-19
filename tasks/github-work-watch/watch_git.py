@@ -27,8 +27,8 @@ def head_refs():
     return {ref.split('/')[2]: sha for sha, ref in (line.split() for line in output.decode().splitlines())}
 
 
-def path_matches(directory: Path, numbers, paths):
-    """Fetch just selected heads and main. Tree-only comparison includes deletions and renames."""
+def path_matches(directory: Path, bases, paths, excludes):
+    """Compare each head with its target branch without fetching file contents."""
     repo = directory / 'source.git'
     if not repo.exists():
         git(['init', '--bare', str(repo)])
@@ -36,15 +36,18 @@ def path_matches(directory: Path, numbers, paths):
     git(['config', 'remote.origin.promisor', 'true'], repo)
     git(['config', 'remote.origin.partialclonefilter', 'blob:none'], repo)
     results = {}
+    numbers = list(bases)
     for start in range(0, len(numbers), 100):
         batch = numbers[start:start + 100]
-        refs = ['+refs/heads/main:refs/watch/main'] if start == 0 else []
+        branches = set(bases[n] for n in batch)
+        refs = [f'+refs/heads/{branch}:refs/watch/base/{branch}' for branch in branches]
         refs.extend(f'+refs/pull/{n}/head:refs/watch/pr/{n}' for n in batch)
         git(['fetch', '--no-tags', '--filter=blob:none', 'origin', *refs], repo, network=True)
         for n in batch:
             ref = f'refs/watch/pr/{n}'
             sha = git(['rev-parse', ref], repo).stdout.decode().strip()
-            comparison = git(['diff', '--quiet', '--no-renames', 'refs/watch/main...' + ref, '--',
-                              *(':(top,literal)' + path for path in paths)], repo, diff=True)
+            comparison = git(['diff', '--quiet', '--no-renames', f'refs/watch/base/{bases[n]}...' + ref, '--',
+                              *(':(top,literal)' + path for path in paths),
+                              *(':(top,exclude,literal)' + path for path in excludes)], repo, diff=True)
             results[n] = (sha, comparison.returncode == 1)
     return results
