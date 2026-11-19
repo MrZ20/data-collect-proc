@@ -2,6 +2,8 @@
 
 每个任务单独维护依赖、Dockerfile、部署配置和本地状态。`tasks/vllm-ascend-ci` 初筛 GitHub Actions 失败 job；`tasks/vllm-ascend-changes` 每 15 分钟检查配置的文件路径并立即上传结果，详见[任务说明](tasks/vllm-ascend-changes/README.md)。
 
+`tasks/github-work-watch` 每 15 分钟按远端的关注账号和路径清单更新 PR 状态与代码更新时间，详见[任务说明](tasks/github-work-watch/README.md)。
+
 镜像手动构建。本仓库没有 GitHub Actions 工作流。`zsl-arm64` 已启用 systemd timer，每小时启动一次容器，采集并上传数据。
 
 ## 仓库分工

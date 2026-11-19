@@ -1,0 +1,10 @@
+[Unit]
+Description=Check watched pull requests every 15 minutes
+
+[Timer]
+OnCalendar=*:04,19,34,49
+Persistent=true
+Unit=github-work-watch.service
+
+[Install]
+WantedBy=timers.target
