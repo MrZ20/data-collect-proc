@@ -121,17 +121,49 @@ def collect(api, directory, state, users, paths, excludes, viewer, now):
         if row['pending'] and (row.get('hits', 0) < 2 or now.timestamp() >= row['checked_at'] + 4 * 3600):
             due[number] = base
 
-    if due:
+    path_check_count = len(due)
+    for attempt in range(3):
+        if not due:
+            break
         matches = path_matches(directory, due, paths, excludes)
+        retry = {}
         for number, (sha, matched) in matches.items():
-            row = rows[f'{SOURCE}#{number}']
+            item = f'{SOURCE}#{number}'
+            row = rows[item]
             if row['sha'] != sha:
-                raise RuntimeError(f'PR {number} changed during path comparison; retry later')
+                retry[number] = due[number]
+                continue
             row.update(checked_sha=sha, matched=matched, checked_at=now.timestamp(), pending=False,
                        hits=row.get('hits', 0) + 1 if matched else 0)
+        due = retry
+        if due:
+            updated, _ = api.lookup({f'{SOURCE}#{number}' for number in due}, [], state['cutoff'], rows)
+            for number in list(due):
+                item = f'{SOURCE}#{number}'
+                node = updated[item]
+                row = rows[item]
+                if (node.get('author') or {}).get('login', '').lower() == viewer.lower():
+                    del rows[item]
+                    del due[number]
+                    continue
+                row['status'] = ('draft' if node['state'] == 'OPEN' and node['isDraft']
+                                 else node['state'].lower())
+                if terminal(row):
+                    files = api.changed_files(SOURCE, number)
+                    row['matched'] = any(included(name, paths, excludes) for name in files)
+                    del due[number]
+                    continue
+                if row['sha'] != node['headRefOid']:
+                    row['sha'] = node['headRefOid']
+                    row['code_updated_at'] = stamp(now)
+                row['base'] = node['baseRefName']
+                due[number] = row['base']
+                refs[number] = row['sha']
+    if due:
+        raise RuntimeError(f'PR heads changed repeatedly during path comparison: {list(due)}')
 
     state.update(refs=refs, paths=paths, exclude_paths=excludes, policy_version=2)
-    print(f'PR refs={len(refs)} changed={len(changed)} metadata={len(known)} path_checks={len(due)}', flush=True)
+    print(f'PR refs={len(refs)} changed={len(changed)} metadata={len(known)} path_checks={path_check_count}', flush=True)
 
 
 def snapshot(rows):

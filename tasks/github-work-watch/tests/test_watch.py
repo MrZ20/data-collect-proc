@@ -147,3 +147,21 @@ def test_compare_target_branch_and_excluded_directory(monkeypatch, tmp_path):
     result = watch_git.path_matches(tmp_path / 'state', {'1': 'release', '2': 'release', '3': 'release'},
                                     ['.github'], ['.github/workflows/configs'])
     assert [result[n][1] for n in ('1', '2', '3')] == [False, False, True]
+
+
+def test_retries_head_updated_during_path_check(monkeypatch, tmp_path):
+    api, state = Upstream(), {}
+    monkeypatch.setattr(monitor, 'head_refs', lambda: {'12': 'a'})
+    calls = []
+
+    def changing_head(_, numbers, paths, excludes):
+        calls.append(True)
+        if len(calls) == 1:
+            api.sha = 'b'
+        return {'12': (api.sha, True)}
+
+    monkeypatch.setattr(monitor, 'path_matches', changing_head)
+    monitor.collect(api, tmp_path, state, [], ['.github'], [], 'MrZ20', START)
+    assert len(calls) == 2
+    assert state['prs'][ITEM]['sha'] == 'b'
+    assert json.loads(monitor.snapshot(state['prs']))[0]['code_updated_at'] == '2026-11-19T00:00:00Z'
