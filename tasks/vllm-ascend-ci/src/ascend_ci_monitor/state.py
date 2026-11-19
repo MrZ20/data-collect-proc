@@ -19,6 +19,10 @@ class State:
                 id INTEGER PRIMARY KEY, attempt INTEGER NOT NULL, status TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS seen_jobs (id INTEGER PRIMARY KEY);
+            CREATE TABLE IF NOT EXISTS run_rechecks (
+                run_id INTEGER PRIMARY KEY, attempt INTEGER NOT NULL,
+                reason TEXT NOT NULL, first_seen TEXT NOT NULL, retry_at TEXT NOT NULL
+            );
             CREATE TABLE IF NOT EXISTS observations (
                 workflow TEXT NOT NULL, job_name TEXT NOT NULL, step_name TEXT NOT NULL,
                 run_id INTEGER NOT NULL, status TEXT NOT NULL, completed_at TEXT NOT NULL,
@@ -97,11 +101,39 @@ class State:
 
     def pending_run_ids(self) -> list[int]:
         return [row[0] for row in self._db.execute(
-            "SELECT id FROM runs WHERE status != 'completed' ORDER BY id"
+            "SELECT id FROM runs WHERE status != 'completed' "
+            "UNION SELECT run_id FROM run_rechecks "
+            "UNION SELECT g.run_id FROM run_groups g JOIN runs r ON g.run_id=r.id "
+            "WHERE g.status != 'completed' AND g.attempt < r.attempt ORDER BY 1"
         )]
 
     def forget_run(self, run_id: int) -> None:
         self._db.execute("DELETE FROM runs WHERE id = ?", (run_id,))
+        self.clear_recheck(run_id)
+
+    def rechecks(self):
+        return {run_id: (attempt, reason, first_seen, retry_at)
+                for run_id, attempt, reason, first_seen, retry_at in self._db.execute(
+                    "SELECT run_id, attempt, reason, first_seen, retry_at FROM run_rechecks")}
+
+    def defer_run(self, run_id, attempt, reason, first_seen, retry_at):
+        self._db.execute(
+            "INSERT INTO run_rechecks VALUES (?, ?, ?, ?, ?) "
+            "ON CONFLICT(run_id) DO UPDATE SET attempt=excluded.attempt, reason=excluded.reason, "
+            "first_seen=excluded.first_seen, retry_at=excluded.retry_at",
+            (run_id, attempt, reason, first_seen, retry_at),
+        )
+
+    def clear_recheck(self, run_id):
+        self._db.execute("DELETE FROM run_rechecks WHERE run_id=?", (run_id,))
+
+    def unfinished_groups(self):
+        groups = {}
+        for run_id, attempt in self._db.execute(
+            "SELECT DISTINCT run_id, attempt FROM run_groups WHERE status != 'completed'"
+        ):
+            groups.setdefault(run_id, []).append(attempt)
+        return groups
 
     def known_attempt(self, run_id: int) -> int | None:
         row = self._db.execute(

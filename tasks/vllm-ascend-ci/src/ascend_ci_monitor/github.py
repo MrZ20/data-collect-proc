@@ -49,7 +49,7 @@ class GitHub:
                         isinstance(exc, (requests.exceptions.ConnectionError, requests.exceptions.Timeout))):
                     time.sleep(2 ** attempt + random.uniform(0, 0.25))
                     continue
-                raise RuntimeError('GitHub network request failed; retry later') from None
+                raise RuntimeError(f'GitHub network request failed for {method} {path}; retry later') from None
 
             self.remaining = response.headers.get('X-RateLimit-Remaining')
             if response.status_code == 304 and cache_entry is not None and cache_entry[3] is not None:
@@ -114,14 +114,17 @@ class GitHub:
 
     def paginate(self, path: str, key: str, params=None):
         params = dict(params or {}, per_page=100)
-        page = 1
-        while True:
+        first = self.get(path, dict(params, page=1))
+        total = first['total_count']
+        items = {item['id']: item for item in first[key]}
+        consistent = True
+        for page in range(2, (total + 99) // 100 + 1):
             data = self.get(path, dict(params, page=page))
-            items = data[key]
-            yield from items
-            if len(items) < 100:
-                break
-            page += 1
+            consistent &= data['total_count'] == total
+            items.update((item['id'], item) for item in data[key])
+        if not consistent or len(items) != total:
+            raise RuntimeError(f'GitHub pagination changed for {path}; retry later')
+        return items.values()
 
     def read_text(self, repository: str, path: str, ref: str) -> str:
         data = self.get(f'/repos/{repository}/contents/{quote(path, safe="/")}', {'ref': ref})

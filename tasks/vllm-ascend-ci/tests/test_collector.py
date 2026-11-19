@@ -181,18 +181,18 @@ def test_only_registered_workflows_fetch_jobs_and_removed_workflows_stop_trackin
         assert state.pending()[0][1]['workflow'] == 'E2E'
 
 
-def test_source_failure_during_processing_rolls_back_previous_job(tmp_path):
+def test_job_detail_failure_defers_only_incomplete_work(tmp_path):
     source = Source([run(1)], {(1, 1): [
         job(1, "test [gpu]", ("new step", "failure"), minute=1),
         job(2, "test [gpu]", minute=2),
     ]})
     with State(tmp_path / "state.sqlite") as state:
-        # The missing-step job is re-read after the preceding job was processed.
-        with pytest.raises(RuntimeError, match="job unavailable"):
-            collect(source, None, CONFIG, rules(), state, now=NOW, upload=False)
-        assert not state.has_job(1)
-        assert state.pending() == []
-        assert state.get_meta("scanned_until") is None
+        result = collect(source, None, CONFIG, rules(), state, now=NOW, upload=False)
+        assert result["detail_errors"] == result["pending_rechecks"] == 1
+        assert state.has_job(1)
+        assert not state.has_job(2)
+        assert len(state.pending()) == 1
+        assert state.get_meta("scanned_until") == "2026-01-02T12:00:00Z"
 
 
 def test_publication_failure_keeps_outbox(tmp_path):
@@ -336,3 +336,90 @@ def test_run_completion_updates_existing_group_without_new_job(tmp_path):
         source.runs[1] = dict(run(1), conclusion='failure')
         collect(source, None, CONFIG, rules(), state, now=NOW.replace(hour=13), upload=False)
         assert state.pending_groups() == [(1, 1, '2026-01-02', 'completed', 'failure')]
+
+
+@pytest.mark.parametrize('initial_jobs', [[], [job(1, 'test [gpu]')]])
+def test_late_jobs_and_steps_are_collected_next_round(tmp_path, initial_jobs):
+    class LaggingSource(Source):
+        def get(self, path, params=None):
+            if '/actions/jobs/' in path:
+                return self.jobs[(1, 1)][0]
+            return super().get(path, params)
+
+    source = LaggingSource([dict(run(1), conclusion='failure')], {(1, 1): initial_jobs})
+    path = tmp_path / 'state.sqlite'
+    with State(path) as state:
+        first = collect(source, None, CONFIG, rules(), state, now=NOW, upload=False)
+        assert first['pending_rechecks'] == 1
+        assert not state.has_job(1)
+    source.jobs[(1, 1)] = [job(1, 'test [gpu]', ('Initialize containers', 'failure'))]
+    with State(path) as state:
+        second = collect(source, None, CONFIG, rules(), state, now=NOW + timedelta(hours=1), upload=False)
+        assert second['candidates_added'] == 1
+        assert second['pending_rechecks'] == 0
+
+
+def test_job_list_failure_still_publishes_other_runs(tmp_path):
+    class PartialSource(Source):
+        def paginate(self, path, key, params=None):
+            if path.endswith('/2/jobs'):
+                raise RuntimeError('temporary timeout')
+            return super().paginate(path, key, params)
+
+    from test_publish import Writer
+
+    writer = Writer()
+    source = PartialSource([run(1), run(2)], {(1, 1): [job(1, 'test [gpu]', ('setup', 'failure'))]})
+    with State(tmp_path / 'state.sqlite') as state:
+        result = collect(source, writer, CONFIG, rules(), state, now=NOW)
+        assert result['published'] == 1
+        assert result['detail_errors'] == 1
+        assert state.pending_run_ids() == [2]
+        assert state.get_meta('scanned_until') == '2026-01-02T12:00:00Z'
+
+
+def test_run_listing_failure_still_publishes_old_outbox(tmp_path):
+    from test_publish import Writer, record
+
+    source = Source([], {})
+    source.fail = True
+    writer = Writer()
+    with State(tmp_path / 'state.sqlite') as state:
+        state.enqueue(1, record(1))
+        with pytest.raises(RuntimeError, match='source unavailable'):
+            collect(source, writer, CONFIG, rules(), state, now=NOW)
+        assert len(writer.commits) == 1
+        assert not state.pending()
+        assert not state.get_meta('scanned_until')
+
+
+def test_rerun_reconciles_previous_attempt_group(tmp_path):
+    class RerunSource(Source):
+        def get(self, path, params=None):
+            if path.endswith('/1/attempts/1'):
+                return dict(run(1), conclusion='failure')
+            return super().get(path, params)
+
+    source = RerunSource([run(1, status='in_progress')],
+                         {(1, 1): [dict(job(1, 'test [gpu]', ('setup', 'failure')), run_attempt=1)]})
+    with State(tmp_path / 'state.sqlite') as state:
+        collect(source, None, CONFIG, rules(), state, now=NOW, upload=False)
+        state.acknowledge_groups(state.pending_groups())
+        source.runs[1] = dict(run(1, attempt=2), conclusion='success')
+        collect(source, None, CONFIG, rules(), state, now=NOW + timedelta(hours=1), upload=False)
+        assert state.pending_groups() == [(1, 1, '2026-01-02', 'completed', 'failure')]
+        assert state.known_attempt(1) == 2
+
+
+def test_completed_run_with_stale_job_is_rechecked_without_reopening_group(tmp_path):
+    source = Source([dict(run(1), conclusion='failure')], {(1, 1): [
+        job(1, 'test [gpu]', status='queued'),
+        job(2, 'test [gpu]', ('setup', 'failure')),
+    ]})
+    with State(tmp_path / 'state.sqlite') as state:
+        first = collect(source, None, CONFIG, rules(), state, now=NOW, upload=False)
+        assert first['pending_rechecks'] == 1
+        assert state.pending_groups() == [(1, 1, '2026-01-02', 'completed', 'failure')]
+        late = collect(source, None, CONFIG, rules(), state, now=NOW + timedelta(hours=24), upload=False)
+        assert late['pending_rechecks'] == 0
+        assert state.known_attempt(1) == 1

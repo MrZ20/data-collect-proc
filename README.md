@@ -22,7 +22,7 @@
 - `exclude_chains` 是同一次 job 执行中按顺序全部失败的步骤链。中间可有其他步骤，但链中的成功或跳过不算失败。先从原始失败集合匹配，再执行排除；链外失败仍进入候选。
 - job 名和普通 step 排除支持 `*` 通配符，也优先匹配完整字面名称；链内 step 使用精确名称。
 - conclusion 为 cancelled 的 job 不纳入候选，也不参与连续失败统计；run 取消不影响其中 conclusion 为 failure 的 job。
-- 已登记 workflow 内未登记的 job/step 默认纳入。没有失败 step 时不凭 job 结论生成候选；失败 job 缺步骤会补读一次，仍为空则记录警告，不补造步骤。
+- 已登记 workflow 内未登记的 job/step 默认纳入。没有失败 step 时不凭 job 结论生成候选；失败 job 缺步骤会补读一次，仍为空则进入待补查队列，不补造步骤。
 - 普通排除步骤和链首步骤连续失败达到 `repeat_threshold` 后重新进入候选；链后续步骤不单独触发。`repeat_exclude` 可以为具体 job 配置不参加连续失败统计的步骤白名单；要同时排除单次失败，仍须将该步骤写入 `exclude`。成功打断连续失败，跳过不计数，同一个 run 的重跑不增加独立样本数（采用首次观察到的有效结果）。整 job 排除不会被重新纳入。
 
 ````yaml
@@ -87,9 +87,13 @@ reports/vllm-ascend-ci/YYYY-MM-DD.md
 
 SQLite 保存固定采集起点、游标、待完成运行、去重、连续失败记录、压缩的 HTTP 缓存和待上传记录。上传失败不会丢失 outbox。每批 JSONL 与 Markdown 同一次提交，重试按 job URL 去重，不强制覆盖远端分支。没有新增数据则不提交。使用文件锁防止同一状态目录被同时采集。
 
-采集将创建时间范围切成固定整点窗口，每页批量获取 100 条 run 元数据；达到 GitHub 的 1000 条搜索上限时继续拆分窗口。按 run ID 去重，检查分页总数与实际条数；发现翻页变化就重读该窗口一次，仍不一致则本轮失败且不推进游标。固定窗口结合 ETag 条件请求，未变化的页面使用 304 和本地缓存；仍会发 HTTP 请求，但[认证的 304 不消耗主要 API 限额](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#use-conditional-requests-if-appropriate)。缓存也会重新验证，不能用旧缓存掩盖网络失败。随后在本地筛选：跳过未登记 workflow、已处理的相同 attempt、尚未执行的首次 queued run 和 skipped run；成功 run 只有在该 workflow 配置了需要连续失败统计的步骤时才获取 job。随后对新 run、未完成 run 和 attempt 改变的 run，分页获取所有 attempt 的 job/step、runner 和链接，不对每个步骤单独查询；只对失败且缺步骤的 job 补读一次。不做连续失败统计的成功 run 中被 `continue-on-error` 吞掉的失败不保证捕获。
+采集将创建时间范围切成固定整点窗口，每页批量获取 100 条 run 元数据；达到 GitHub 的 1000 条搜索上限时继续拆分窗口。按 run ID 去重，检查分页总数与实际条数；发现翻页变化就重读该窗口一次，仍不一致则本轮失败且不推进游标。固定窗口结合 ETag 条件请求，未变化的页面使用 304 和本地缓存；仍会发 HTTP 请求，但[认证的 304 不消耗主要 API 限额](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#use-conditional-requests-if-appropriate)。缓存也会重新验证，不能用旧缓存掩盖网络失败。随后在本地筛选：跳过未登记 workflow、已处理的相同 attempt、尚未执行的首次 queued run 和 skipped run；成功 run 只有在该 workflow 配置了需要连续失败统计的步骤时才获取 job。随后对新 run、未完成 run 和 attempt 改变的 run，分页获取所有 attempt 的 job/step、runner 和链接，不对每个步骤单独查询；对失败且缺步骤的 job 先单独补读一次。Job 列表跨页核对总数和唯一 ID，发现不一致则补查对应 run。不做连续失败统计的成功 run 中被 `continue-on-error` 吞掉的失败不保证捕获。
 
 HTTP 连接复用。读取请求对连接错误、超时、临时 5xx 和限流最多尝试三次；按退避、`Retry-After` 或剩余额度重置时间等待。需要等待超过 60 秒则退出，保留状态供下一轮重试。写操作不盲目重放：提交响应丢失时先重读远端、按 URL 去重，再有限重试整批上传。
+
+Run 列表扫描失败时保留游标，并尝试发布已有 outbox。单个 Run 的 Job 请求、详情或旧 attempt 状态查询出错时保存待补查记录，同轮其他完整数据仍可入库和发布。暂缺 Jobs/Steps 或已结束 Run 仍有未完成 Job 时先在下一轮补查，两小时后降到每六小时，24 小时仍不完整则记录告警并结束补查。暂时的 API 请求错误会继续留在队列。Run 分组保留 GitHub 给出的状态，补查状态单独存储。发现重跑时，仅补查已知但尚无最终状态的旧分组。
+
+日志分别记录配置加载、Run 列表、Run/Job 详情、写入 SQLite 和上传的耗时与请求数。配置日志包括来源和摘要，成功输出包括补查数量、最老补查等待秒数和详情错误数。详情阶段达到 20 分钟预算时保留已读结果并发布，扫描游标留待下一轮续跑。
 
 ## 手动构建与部署
 
@@ -97,7 +101,7 @@ HTTP 连接复用。读取请求对连接错误、超时、临时 5xx 和限流�
 
 ````bash
 docker build -f tasks/vllm-ascend-ci/Dockerfile \
-  -t data-collect-vllm-ascend-ci:0.1.4 .
+  -t data-collect-vllm-ascend-ci:0.1.5 .
 ````
 
 服务器约定目录：

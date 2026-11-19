@@ -135,3 +135,12 @@ def test_no_etag_clears_old_cache_and_failed_read_keeps_it(monkeypatch, tmp_path
     headers = [call[2]['headers'] for call in session.calls]
     assert headers[1]['If-None-Match'] == headers[2]['If-None-Match'] == '"first"'
     assert 'If-None-Match' not in headers[3]
+
+
+def test_job_pagination_rejects_missing_unique_items(monkeypatch):
+    client = GitHub('test-token')
+    first = [{'id': n} for n in range(100)]
+    pages = iter([{'total_count': 101, 'jobs': first}, {'total_count': 101, 'jobs': first[:1]}])
+    monkeypatch.setattr(client, 'get', lambda path, params: next(pages))
+    with pytest.raises(RuntimeError, match='pagination changed'):
+        client.paginate('/actions/runs/1/jobs', 'jobs')

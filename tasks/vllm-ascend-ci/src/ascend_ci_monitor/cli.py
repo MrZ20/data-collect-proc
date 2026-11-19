@@ -9,7 +9,7 @@ from pathlib import Path
 
 import yaml
 
-from .collector import collect, sync_policy
+from .collector import collect, stage, sync_policy
 from .github import GitHub
 from .policy import Policy
 from .publish import publish
@@ -80,7 +80,8 @@ def main(argv=None) -> int:
                 if args.command == 'publish':
                     result = {'published': publish(writer, config['data_repository'], config['data_branch'], state)}
                 else:
-                    policy = sync_policy(writer, config, state_dir, args.policy)
+                    with stage('policy', writer):
+                        policy = sync_policy(writer, config, state_dir, args.policy)
                     result = collect(source, writer, config, policy, state, upload=not args.no_upload)
                 result.update(api_requests=source.requests + writer.requests,
                               metadata_cache_hits=source.cache_hits,
