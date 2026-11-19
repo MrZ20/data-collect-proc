@@ -4,3 +4,4 @@ paths:
   - .github/
 exclude_paths:
   - .github/workflows/configs/
+  - .github/workflows/misc/model_dataset_list.json
